@@ -1541,7 +1541,9 @@
         background: var(--floating-surface); color: var(--text-secondary); box-shadow: var(--floating-shadow);
         font-size: 12px;
       }
-      .key-route-tooltip:popover-open { display: grid; gap: 6px; }
+      /* Block flow avoids WebKit stretching auto-height popover grid rows. */
+      .key-route-tooltip:popover-open { display: block; }
+      .key-route-tooltip > * + * { margin-top: 6px; }
       .key-route-tooltip-heading { font-size: 11px; color: var(--text-tertiary); }
       .key-route-more { color: var(--text-tertiary); line-height: 1; }
       .key-route-actions { margin-top: 5px; }
