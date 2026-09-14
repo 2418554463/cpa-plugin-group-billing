@@ -264,7 +264,7 @@
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 4px 6px;
+        gap: 4px 0;
         padding: 24px 12px max(32px, env(safe-area-inset-bottom));
         color: var(--text-tertiary);
         font-size: 11px;
@@ -280,6 +280,10 @@
       .small { font-size: 12px; }
       .mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+      .text-separator {
+        /* Monospace fonts can give thin spaces the same width as normal spaces. */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
       .card {
         background: var(--bg-primary);
@@ -2934,15 +2938,14 @@
         ></span
       >
       <span
-        >·
-        <a
+        >&thinsp;·&thinsp;<a
           href="https://github.com/haowang02/cpa-plugin-key-billing/blob/main/LICENSE"
           target="_blank"
           rel="noopener noreferrer"
           >License</a
         ></span
       >
-      <span>· Version: v1.3.10</span>
+      <span>&thinsp;·&thinsp;Version: v1.3.10</span>
     </footer>
 
     <div id="notice" class="notice" popover="manual"></div>
@@ -3038,6 +3041,7 @@
       const PLUGIN_BASE = "/v0/management/plugins/cpa-key-billing";
       const ACCOUNT_BASE = "/v0/resource/plugins/cpa-key-billing";
       const CALLER_SCOPE_SALT = "cli-proxy-api:caller-scope:v1\u0000";
+      const DISPLAY_SEPARATOR = "\u2009·\u2009";
       const $ = (id) => document.getElementById(id);
 
       /* A same-origin iframe can borrow the panel's obfuscated management key. When
@@ -5166,7 +5170,7 @@
         const tracked = profile?.tracked === true;
         $("account-untracked").classList.toggle("hidden", !profile || tracked);
         $("account-content").classList.toggle("hidden", !tracked);
-        if (tracked) $("account-identity").textContent = apiKeyIdentity(profile.identity || {}).text;
+        if (tracked) $("account-identity").replaceChildren(displayText(apiKeyIdentity(profile.identity || {}).text));
         else closeSharedTimePopover(true);
         return tracked;
       }
@@ -5180,7 +5184,7 @@
           : int(concurrency.current) + " / " + (Number(concurrency.limit || 0) > 0 ? int(concurrency.limit) : "∞");
         $("account-plan-name").textContent = !data.value
           ? "订阅额度"
-          : subscription.name || (subscription.unlimited ? "未绑定订阅计划" : "订阅额度");
+          : displayLabel(subscription.name || (subscription.unlimited ? "未绑定订阅计划" : "订阅额度"));
         $("account-plan-status").className = "tag " + (subscription.blocked ? "bad" : "plain");
         $("account-plan-status").textContent = !data.value
           ? ""
@@ -5235,7 +5239,7 @@
             ? credentialProviderLabel(item)
             : item.status === "missing"
               ? item.name || "指定上游凭证当前不可用"
-              : item.provider + " · " + (item.name || "凭证不可用"),
+              : item.provider + DISPLAY_SEPARATOR + (item.name || "凭证不可用"),
           tag: item.provider_wide ? "整类" : "",
           iconName: credentialIcon(item),
           state: item.denied ? "deny" : state,
@@ -5286,7 +5290,7 @@
             el(
               "div",
               { class: "account-access-warnings" },
-              access.warnings.map((warning) => el("span", { class: "tag warn", text: warning })),
+              access.warnings.map((warning) => el("span", { class: "tag warn", text: displayLabel(warning) })),
             ),
           );
         return el("div", { class: "display-contents" }, nodes);
@@ -5486,7 +5490,7 @@
                   titleColor: themeColor("--text-primary", "#f6f4f1"),
                   bodyColor: themeColor("--text-secondary", "#c9c3bb"),
                   callbacks: {
-                    title: (items) => (items.length ? dimensionLabel + " · " + items[0].label : dimensionLabel),
+                    title: (items) => (items.length ? dimensionLabel + DISPLAY_SEPARATOR + items[0].label : dimensionLabel),
                     label: (context) => {
                       const row = rows[context.dataIndex];
                       return [
@@ -5809,7 +5813,7 @@
         const metric = analysisMetrics[role];
         const rows = compactDistribution(analysis.usage_distribution[dimension], metric);
         if (dimension === "sources") {
-          for (const row of rows) row.label = sourceLabel(row.label || row.key);
+          for (const row of rows) row.label = displayLabel(row.label || row.key);
         }
         const metricSelect = el(
           "select",
@@ -5955,13 +5959,13 @@
         if (typeSelect.value) types.push(typeSelect.value.slice(5));
         populateEventFilterSelect(
           typeSelect,
-          "全部错误类型 · " + int(total),
+          "全部错误类型" + DISPLAY_SEPARATOR + int(total),
           [...new Set(types)].sort(),
           (value) => "type:" + value,
-          (value) => (value || "未分类") + " · " + int(counts[value]),
+          (value) => (value || "未分类") + DISPLAY_SEPARATOR + int(counts[value]),
         );
         populateEventFilterSelect($(prefix + "error-model"), "全部模型", filters.models);
-        populateEventFilterSelect($(prefix + "error-source"), "全部来源", filters.sources, undefined, sourceLabel);
+        populateEventFilterSelect($(prefix + "error-source"), "全部来源", filters.sources, undefined, displayLabel);
       }
 
       function renderErrors(account) {
@@ -5999,7 +6003,7 @@
                   { class: "event-request-meta" },
                   account ? null : errorEventField("API Key", apiKeyIdentity(entry).text, false),
                   errorEventField("模型", entry.billing_model || entry.upstream_model),
-                  errorEventField("来源", sourceLabel(entry.source)),
+                  errorEventField("来源", displayLabel(entry.source)),
                 ),
                 el("div", { class: "event-entry-tags" }, tags),
               ),
@@ -6252,9 +6256,11 @@
       }
 
       function quotaLabel(row) {
-        return row.group_label && row.group_label.toLocaleLowerCase() !== row.label.toLocaleLowerCase()
-          ? row.group_label + " · " + row.label
-          : row.group_label || row.label;
+        return displayLabel(
+          row.group_label && row.group_label.toLocaleLowerCase() !== row.label.toLocaleLowerCase()
+            ? row.group_label + DISPLAY_SEPARATOR + row.label
+            : row.group_label || row.label,
+        );
       }
 
       function renderQuotaRow(row) {
@@ -6267,7 +6273,7 @@
         const amount = quotaAmount(row);
         const stats = [el("span", { class: "auth-quota-value", text: value })];
         if (amount) stats.push(el("span", { text: amount }));
-        if (reset.at) stats.push(el("span", { text: reset.at + (reset.after ? " · " + reset.after : "") }));
+        if (reset.at) stats.push(el("span", { text: reset.at + (reset.after ? DISPLAY_SEPARATOR + reset.after : "") }));
         return el(
           "div",
           { class: "auth-quota-row" },
@@ -6479,8 +6485,19 @@
         }
       }
 
-      function sourceLabel(source) {
-        return String(source || "").replace(/\s*·\s*/g, " · ");
+      // Format display labels without changing API values or editable text.
+      function displayLabel(value) {
+        return String(value ?? "").replace(/\s*·\s*/g, DISPLAY_SEPARATOR);
+      }
+
+      function displayText(value) {
+        if (typeof value !== "string" || !value.includes("·")) return value;
+        const fragment = document.createDocumentFragment();
+        displayLabel(value).split(DISPLAY_SEPARATOR).forEach((part, index) => {
+          if (index) fragment.append(el("span", { class: "text-separator", text: DISPLAY_SEPARATOR }));
+          fragment.append(part);
+        });
+        return fragment;
       }
 
       function apiKeyIdentity(view) {
@@ -6491,14 +6508,14 @@
         const label = candidate && candidate !== preview && candidate !== scope ? candidate : "";
         const primary = label || preview || (scope ? "unknown" : "未归属");
         const secondary = label ? preview : "";
-        return { primary, secondary, text: secondary ? primary + " · " + secondary : primary };
+        return { primary, secondary, text: displayLabel(secondary ? primary + DISPLAY_SEPARATOR + secondary : primary) };
       }
 
       function renderAPIKeyIdentity(view, options = {}) {
         const identity = apiKeyIdentity(view);
         const trailing = options.trailing || [];
         const line = (text, className, children = []) =>
-          el("span", { class: "api-key-identity-line" + className }, el("span", { text }), children);
+          el("span", { class: "api-key-identity-line" + className }, el("span", {}, displayText(text)), children);
         return el(
           "span",
           {
@@ -6599,12 +6616,7 @@
           .filter((key) => !key.deleted_at || $("keys-include-deleted").checked)
           .filter(
             (view) =>
-              !filter ||
-              [apiKeyIdentity(view).text, view.plan_name, view.scope]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase()
-                .includes(filter),
+              matchesTerm([apiKeyIdentity(view).text, view.plan_name, view.scope].filter(Boolean).join(" "), filter),
           );
         renderCollection($("keys-body"), keys, {
           headers: ["API Key", "订阅计划", "路由规则", "并发限制", "订阅额度", "状态", "操作"],
@@ -6632,10 +6644,10 @@
               },
               el("option", { value: "", text: "不限制" }),
               view.plan_id && !(plans || []).some((plan) => plan.id === view.plan_id)
-                ? el("option", { value: view.plan_id, selected: true, text: view.plan_name || view.plan_id })
+                ? el("option", { value: view.plan_id, selected: true, text: displayLabel(view.plan_name || view.plan_id) })
                 : null,
               (plans || []).map((plan) =>
-                el("option", { value: plan.id, selected: plan.id === view.plan_id }, plan.name || plan.id),
+                el("option", { value: plan.id, selected: plan.id === view.plan_id }, displayLabel(plan.name || plan.id)),
               ),
             );
 
@@ -6704,7 +6716,7 @@
                       },
                       actionIcon("copy"),
                     ),
-                    !deleted && !view.in_config ? " · 仅用量记录" : null,
+                    !deleted && !view.in_config ? el("span", {}, displayText(DISPLAY_SEPARATOR + "仅用量记录")) : null,
                   ],
                 }),
               ),
@@ -6764,13 +6776,15 @@
       }
 
       function credentialLabel(item) {
-        if (item.source === "auth-files") return item.provider + " · " + (item.display_name || "未提供邮箱");
-        return item.provider + " · " + item.display_name;
+        const name = item.source === "auth-files" ? item.display_name || "未提供邮箱" : item.display_name;
+        return displayLabel(item.provider + DISPLAY_SEPARATOR + name);
       }
 
       function boundCredentialLabel(ref, labels) {
         const credential = (resources.admin.credentials.value || []).find((item) => item.ref === ref);
-        return (credential && credentialLabel(credential)) || labels?.[ref] || "指定上游凭证 · " + ref.slice(-8);
+        return displayLabel(
+          (credential && credentialLabel(credential)) || labels?.[ref] || "指定上游凭证" + DISPLAY_SEPARATOR + ref.slice(-8),
+        );
       }
 
       function credentialSourceLabel(source) {
@@ -6778,7 +6792,7 @@
       }
 
       function credentialProviderLabel(item) {
-        return credentialSourceLabel(item.source) + " · " + item.provider;
+        return displayLabel(credentialSourceLabel(item.source) + DISPLAY_SEPARATOR + item.provider);
       }
 
       function credentialIcon(item) {
@@ -6915,7 +6929,7 @@
         keyRouteTooltipAnchor = anchor;
         anchor.setAttribute("aria-describedby", tooltip.id);
         tooltip.replaceChildren(
-          el("div", { class: "key-route-tooltip-heading", text: "完整路由规则 · " + entries.length + " 项" }),
+          el("div", { class: "key-route-tooltip-heading", text: "完整路由规则" + DISPLAY_SEPARATOR + entries.length + " 项" }),
           ...entries.map((entry) => settingsChipList([entry])),
         );
         tooltip.style.maxHeight = "";
@@ -6959,7 +6973,7 @@
       }
 
       function matchesTerm(text, term) {
-        return !term || String(text).toLowerCase().includes(term);
+        return !term || displayLabel(text).toLowerCase().includes(displayLabel(term).toLowerCase());
       }
 
       let keyRouteSelection = { scope: "" };
@@ -7017,7 +7031,7 @@
       function routeBindingChoice(selection, id, label, rerender) {
         return el(
           "label",
-          { class: "routing-option", "data-routing-binding": id, title: label },
+          { class: "routing-option", "data-routing-binding": id, title: displayLabel(label) },
           checkboxControl({
             input: el("input", {
               type: "checkbox",
@@ -7032,7 +7046,7 @@
             }),
           }),
           actionIcon("route"),
-          el("span", {}, label),
+          el("span", {}, displayText(label)),
         );
       }
 
@@ -7217,13 +7231,14 @@
               "span",
               {
                 class: "settings-chip" + (item.tag ? " has-tag" : ""),
-                title: item.title || null,
+                title: item.title ? displayLabel(item.title) : null,
               },
               item.iconName ? actionIcon(item.iconName) : null,
-              el("span", {
-                class: "settings-chip-label" + (item.state === "deny" ? " routing-deny" : ""),
-                text: item.text,
-              }),
+              el(
+                "span",
+                { class: "settings-chip-label" + (item.state === "deny" ? " routing-deny" : "") },
+                displayText(item.text),
+              ),
               item.tag ? el("span", { class: "tag warn", text: item.tag }) : null,
             ),
           ),
@@ -7234,7 +7249,7 @@
         return el(
           "div",
           { class: "error-event-field settings-entry-field" },
-          el("span", { class: "error-event-field-label", text: label }),
+          el("span", { class: "error-event-field-label", text: displayLabel(label) }),
           el("div", { class: "error-event-field-value settings-entry-value" }, content),
         );
       }
@@ -7246,7 +7261,7 @@
           el(
             "div",
             { class: "event-entry-head settings-entry-header" },
-            el("div", { class: "settings-entry-title", text: title }),
+            el("div", { class: "settings-entry-title", text: displayLabel(title) }),
             el(
               "div",
               { class: "row settings-entry-actions" },
@@ -7302,7 +7317,7 @@
                   class: "small muted",
                   text: "下次重置：" + when(nextCycleStart(window)),
                 }));
-              const field = settingsEntryField(window.name + " · " + periodLabel(window.period_seconds), quotas);
+              const field = settingsEntryField(window.name + DISPLAY_SEPARATOR + periodLabel(window.period_seconds), quotas);
               field.classList.add("plan-window-summary");
               return field;
             });
@@ -7493,7 +7508,7 @@
         const key = kind + ":" + (kind === "provider" ? value.source + ":" + value.provider : value);
         const title =
           (kind === "credential" && iconName
-            ? credentialSourceLabel(item.source) + " · "
+            ? credentialSourceLabel(item.source) + DISPLAY_SEPARATOR
             : "") +
           label +
           "：" +
@@ -7766,7 +7781,7 @@
                   "div",
                   { class: "cost-tooltip-summary" },
                   el("span", {}, "计费倍率"),
-                  el("b", {}, "2.5× · Codex Fast mode"),
+                  el("b", {}, "2.5×" + DISPLAY_SEPARATOR + "Codex Fast mode"),
                 ),
                 el("div", { class: "cost-tooltip-summary" }, "以下单价和金额已包含倍率"),
               ]
@@ -7822,7 +7837,7 @@
       function labelRequestEventStatuses(select, counts) {
         for (const option of select.options) {
           const status = REQUEST_EVENT_STATUS_OPTIONS[option.value];
-          const label = status.label + " · " + int((counts || {})[status.count]);
+          const label = status.label + DISPLAY_SEPARATOR + int((counts || {})[status.count]);
           if (option.textContent !== label) option.textContent = label;
         }
       }
@@ -7833,7 +7848,8 @@
         let position = select.firstChild;
         for (const { value, text } of options) {
           const option = previous.get(value) || el("option", { value });
-          if (option.textContent !== text) option.textContent = text;
+          const label = displayLabel(text);
+          if (option.textContent !== label) option.textContent = label;
           if (option !== position) select.insertBefore(option, position);
           position = option.nextSibling;
           previous.delete(value);
@@ -7862,7 +7878,7 @@
         if (!filters) return;
         const prefix = account ? "account-request-event" : "request-event";
         populateEventFilterSelect($(prefix + "-model"), "全部模型", filters.models);
-        populateEventFilterSelect($(prefix + "-source"), "全部来源", filters.sources, undefined, sourceLabel);
+        populateEventFilterSelect($(prefix + "-source"), "全部来源", filters.sources, undefined, displayLabel);
       }
 
       function readEventKeys(reload) {
@@ -8530,7 +8546,7 @@
             cost.multiplier === 2.5 ? "x2.5" : "",
           ]
             .filter(Boolean)
-            .join(" · ");
+            .join(DISPLAY_SEPARATOR);
           const input = requestInputTokens(cost);
           const output = cost.billed_output_tokens;
           // Missing usage details mean unknown counts, not zero usage.
@@ -8560,8 +8576,8 @@
               el("div", { class: "request-event-cell-line mono" }, entry.executor_type || "执行器未知"),
               el(
                 "div",
-                { class: "request-event-source muted", title: sourceLabel(entry.source) || null },
-                sourceLabel(entry.source) || "来源未知",
+                { class: "request-event-source muted", title: displayLabel(entry.source) || null },
+                displayLabel(entry.source) || "来源未知",
               ),
             ),
             el(
@@ -8581,8 +8597,8 @@
               el("div", {}, tps === null ? "—" : tps.toFixed(1) + " t/s"),
               el(
                 "div",
-                { class: "muted small", title: hasTTFT ? "首字延迟 · 总延迟" : "总延迟" },
-                hasTTFT ? latency(entry.ttft_ms) + " · " + latency(entry.latency_ms) : latency(entry.latency_ms),
+                { class: "muted small", title: hasTTFT ? "首字延迟" + DISPLAY_SEPARATOR + "总延迟" : "总延迟" },
+                hasTTFT ? latency(entry.ttft_ms) + DISPLAY_SEPARATOR + latency(entry.latency_ms) : latency(entry.latency_ms),
               ),
             ),
             el("td", { class: "num" }, tokens(input)),
@@ -8663,9 +8679,9 @@
             "span",
             {
               class: "error-event-field-value" + (mono ? " mono" : ""),
-              title: typeof value === "string" ? value : null,
+              title: typeof value === "string" ? displayLabel(value) : null,
             },
-            value,
+            displayText(value),
           ),
         );
       }
@@ -8683,7 +8699,7 @@
         for (const id of expandedPluginLogIDs) if (!currentIDs.has(id)) expandedPluginLogIDs.delete(id);
         const searched = pluginLogs.filter((pluginLog) => {
           if (!filter) return true;
-          return (pluginLog.message || "").toLowerCase().includes(filter);
+          return matchesTerm(pluginLog.message || "", filter);
         });
         const counts = {
           ...list.data.level_counts,
@@ -8692,7 +8708,7 @@
         const levelSelect = $("plugin-log-level");
         for (const option of levelSelect.options) {
           const label = option.value === "all" ? "全部级别" : pluginLogLevels[option.value].label;
-          const text = label + " · " + int(counts[option.value]);
+          const text = label + DISPLAY_SEPARATOR + int(counts[option.value]);
           if (option.textContent !== text) option.textContent = text;
         }
         const total = counts[levelSelect.value] || 0;
@@ -8726,7 +8742,7 @@
             row.model_result === "deny" ? "拒绝" : row.model_result === "configuration_error" ? "配置错误" : "允许";
           const credential =
             row.credential_result === "selected"
-              ? "上游凭证：" + (sourceLabel(row.selected_credential) || "未知")
+              ? "上游凭证：" + (displayLabel(row.selected_credential) || "未知")
               : row.credential_result === "no_match"
                 ? "上游凭证：无符合条件的可用凭证"
                 : row.credential_result === "not_reached"
@@ -8759,7 +8775,7 @@
               el(
                 "span",
                 { class: "row" },
-                el("span", { text: "API Key：" + sourceLabel(row.key || "未知") }),
+                el("span", { text: "API Key：" + displayLabel(row.key || "未知") }),
                 el("span", { text: "模型：" + (row.model || "未知") + "（" + model + "）" }),
                 el("span", { text: credential }),
                 el("span", { text: "请求结果：" + outcome }),
@@ -8783,7 +8799,7 @@
         const remaining = (resetAt.getTime() - Date.now()) / 1000;
         return (
           compactResetDate(resetAt) +
-          (showCountdown ? " · " + (remaining <= 0 ? "已到期" : compactResetAfter(remaining)) : "")
+          (showCountdown ? DISPLAY_SEPARATOR + (remaining <= 0 ? "已到期" : compactResetAfter(remaining)) : "")
         );
       }
 
@@ -8803,11 +8819,11 @@
             return el(
               "div",
               { class: "quota-window" + (single ? " quota-single" : "") },
-              single ? null : el("div", { class: "quota-title" }, el("b", { text: window.name }), reset),
+              single ? null : el("div", { class: "quota-title" }, el("b", { text: displayLabel(window.name) }), reset),
               dimensions.map((balance) => {
                 const metric = QUOTA_DIMENSIONS.find((item) => item.metric === balance.metric);
                 const quota = remainingQuota(balance.used_percent);
-                const label = single ? window.name + (account ? " · " + metric.label : "") : metric.label;
+                const label = displayLabel(single ? window.name + (account ? DISPLAY_SEPARATOR + metric.label : "") : metric.label);
                 return el(
                   "div",
                   { class: "quota-metric" },
@@ -8824,9 +8840,11 @@
                       text: metric.format(balance.remaining) + "/" + metric.format(balance.limit),
                       title:
                         metric.label +
-                        " · 剩余 " +
+                        DISPLAY_SEPARATOR +
+                        "剩余 " +
                         metric.exact(balance.remaining) +
-                        " · 已用 " +
+                        DISPLAY_SEPARATOR +
+                        "已用 " +
                         metric.exact(balance.used) +
                         "/" +
                         metric.exact(balance.limit),
@@ -8838,7 +8856,7 @@
                     {
                       class: "bar",
                       role: "progressbar",
-                      "aria-label": window.name + " · " + metric.label + "剩余额度",
+                      "aria-label": window.name + DISPLAY_SEPARATOR + metric.label + "剩余额度",
                       "aria-valuemin": "0",
                       "aria-valuemax": "100",
                       "aria-valuenow": String(Math.round(quota.percent)),
@@ -9321,11 +9339,12 @@
               tokenThreshold(row.long_context.threshold_input_tokens) +
               " 阶梯：输入 " +
               usd(row.long_context.input_per_1m) +
-              " · 输出 " +
+              DISPLAY_SEPARATOR +
+              "输出 " +
               usd(row.long_context.output_per_1m),
           );
         }
-        return prices.join(" · ");
+        return prices.join(DISPLAY_SEPARATOR);
       }
 
       function syncPriceTierFields() {
