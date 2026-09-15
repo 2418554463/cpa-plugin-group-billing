@@ -2534,7 +2534,7 @@
     <dialog id="action-dialog">
       <h2 id="action-dialog-title"></h2>
       <div class="editor-state notice hidden"></div>
-      <p id="action-text" class="muted small"></p>
+      <p id="action-text" class="muted small" style="white-space: pre-line"></p>
       <input id="action-input" class="dialog-input" />
       <div class="row dialog-actions"> <button id="action-cancel">取消</button> <button id="action-confirm" class="primary">确定</button> </div>
     </dialog>
@@ -5412,6 +5412,17 @@
         const summary = [];
         if (Number.isFinite(Number(result.rate_limit_reset_credits_available_count))) {
           summary.push(el("span", { text: "主动重置次数 " + int(result.rate_limit_reset_credits_available_count) }));
+          if (!account && file.category === "codex") {
+            summary.push(
+              el("button", {
+                type: "button",
+                class: "link small",
+                text: "重置额度",
+                disabled: !canResetAuthQuota(file),
+                onclick: () => guard(() => resetAuthQuota(file))
+              })
+            );
+          }
         }
         if (result.fetched_at) summary.push(el("span", { class: "muted", text: "上次查询：" + when(result.fetched_at) }));
         const rows = result.quota;
@@ -5489,6 +5500,81 @@
 
       const AUTH_QUOTA_TIMEOUT_MS = 65000;
       const AUTH_QUOTA_BATCH_CONCURRENCY = 3;
+
+      function canResetAuthQuota(file) {
+        return (
+          currentRole === "admin" && file.category === "codex" && file.quota_supported && !file.disabled &&
+          !adminUIState.authQuotaLoading.has(file.auth_index) &&
+          Number(adminUIState.authQuotas.get(file.auth_index)?.rate_limit_reset_credits_available_count) > 0
+        );
+      }
+
+      async function resetAuthQuota(file) {
+        if (!canResetAuthQuota(file)) return;
+        const owner = adminUIState, generation = authQuotaGeneration.admin, index = file.auth_index;
+        await openActionDialog(
+          "重置 Codex 限额",
+          int(owner.authQuotas.get(index).rate_limit_reset_credits_available_count) + " 次可用重置次数。\n是否消耗 1 次立即重置？",
+          undefined,
+          async () => {
+            if (!authQuotaCacheCurrent(false, owner, generation, index) || !canResetAuthQuota(file)) {
+              throw new Error("认证文件或额度状态已变化，请关闭弹窗并更新限额后重试");
+            }
+            owner.authQuotaLoading.add(index);
+            owner.authQuotas.delete(index);
+            owner.authQuotaErrors.delete(index);
+            persistAuthQuotaCache(false);
+            renderAuthFiles(false);
+            let reset = false;
+            try {
+              const files = await api("GET", "/v0/management/auth-files", null, { raw: true });
+              const auth = requireArray(files?.files, "认证文件").find((item) => item.auth_index === index);
+              if (!auth || auth.type !== "codex" || auth.disabled || auth.name !== file.name) { throw new Error("认证文件已变化，请更新认证文件列表后重试"); }
+              if (!authQuotaCacheCurrent(false, owner, generation, index)) throw new StaleRequestError();
+              const header = {
+                Authorization: "Bearer $TOKEN$",
+                "Content-Type": "application/json",
+                "User-Agent": "codex-tui/0.149.1 (Mac OS 26.5.2; arm64) iTerm.app/3.6.11 (codex-tui; 0.149.1)"
+              };
+              const accountID = auth.id_token?.chatgpt_account_id;
+              if (typeof accountID === "string" && accountID.trim()) header["Chatgpt-Account-Id"] = accountID.trim();
+              const requestID =
+                crypto.randomUUID?.() ||
+                "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+                  const value = Math.floor(Math.random() * 16);
+                  return (char === "x" ? value : (value & 3) | 8).toString(16);
+                });
+              const result = await api(
+                "POST",
+                "/v0/management/api-call",
+                {
+                  auth_index: index,
+                  method: "POST",
+                  url: "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume",
+                  header,
+                  data: JSON.stringify({ redeem_request_id: requestID })
+                },
+                { timeoutMS: AUTH_QUOTA_TIMEOUT_MS, raw: true }
+              );
+              const status = Number(result?.status_code);
+              if (!(status >= 200 && status < 300)) throw new Error("重置额度失败：" + (status ? "上游返回 HTTP " + status : "上游响应格式异常"));
+              reset = true;
+            } finally {
+              if (authQuotaCacheCurrent(false, owner, generation, index)) {
+                owner.authQuotaLoading.delete(index);
+                if (!reset) owner.authQuotaErrors.set(index, "重置未确认成功，请先更新限额查看最新状态");
+                renderAuthFiles(false);
+              }
+            }
+            if (!authQuotaCacheCurrent(false, owner, generation, index)) return;
+            await refreshAuthQuota(file, false);
+            if (authQuotaCacheCurrent(false, owner, generation, index)) {
+              const failed = owner.authQuotaErrors.has(index);
+              notify(failed ? "额度已重置，但更新限额失败，请手动更新" : "已重置「" + file.name + "」的 Codex 额度", failed ? "err" : "ok");
+            }
+          }
+        );
+      }
 
       // Fetching quota updates memory only. Single and batch actions own their
       // display and persistence, so a batch never redraws the list per response.
