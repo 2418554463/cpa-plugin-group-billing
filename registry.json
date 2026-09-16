@@ -4,9 +4,9 @@
     {
       "id": "cpa-key-billing",
       "name": "CPA Group Billing 分组计费",
-      "description": "动态模型分组、按组独立额度与并发、订阅计划及 Keeper 共享备注。Linux amd64/glibc 预发布版；安装时显式选择 v1.3.13-group.1，不选 Latest。",
+      "description": "动态模型分组、按组独立额度与并发、订阅计划及 Keeper 共享备注。Linux amd64/glibc 预发布版；安装时显式选择 v1.3.14-group.1，不选 Latest。",
       "author": "2418554463",
-      "version": "1.3.13-group.1",
+      "version": "1.3.14-group.1",
       "repository": "https://github.com/2418554463/cpa-plugin-group-billing",
       "homepage": "https://github.com/2418554463/cpa-plugin-group-billing",
       "license": "MIT",

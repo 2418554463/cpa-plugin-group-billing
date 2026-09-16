@@ -2,7 +2,15 @@
 
 测试日期：2026-09-17。目标：Linux x86_64 可部署动态库。测试请求均使用 dummy Key 和本地模拟上游，没有调用付费模型或连接生产 Keeper。
 
-## 已通过
+## v1.3.14-group.1 本次验证
+
+- Go 全包测试、race、vet；UI 格式和 JavaScript 语法检查。
+- Playwright 在本地 dummy backend 18765 验证 1440px 桌面和 390px 手机、浅色和深色主题。
+- 搜索和勾选模型、手动别名同步、保存回读、指定供应商和凭证、排除项保留、已发布模型只读、计划额度和不限并发均通过。
+- 手机弹窗无横向溢出，长表单内容区独立滚动，底部操作按钮可见；控制台无错误。
+- 本次未修改计费后端，未重新执行下述真实 CPA E2E；下述结果来自 v1.3.13-group.1。
+
+## 上一版功能验证（v1.3.13-group.1）
 
 - Go 全包单元测试（含 SQLite v14→v15 迁移和旧数据保留）；`go test -race ./internal/...`；`go vet ./...`。
 - 分组领域测试：精确金额、双组额度/并发隔离、多 Key 隔离、60 个并行准入只成功 2 个、重复释放、不限、第三组默认拒绝、迟到 usage/重置/跨日、修订冲突、数据库失败关闭准入。
@@ -15,7 +23,7 @@
 
 ## 构建来源与未验证项
 
-- 基线：上游 cpa-key-billing v1.3.11，commit `0014bc58ed23833c5d949dd05b9f6ab6ea4a2b9d`；二开源码对应 [v1.3.13-group.1](https://github.com/2418554463/cpa-plugin-group-billing/tree/v1.3.13-group.1)。完整安装包的 `BUILDINFO.json` 记录实际源码提交，包内外分别提供 SHA-256 校验清单。
+- 基线：上游 cpa-key-billing v1.3.11，commit `0014bc58ed23833c5d949dd05b9f6ab6ea4a2b9d`；二开源码对应 [v1.3.14-group.1](https://github.com/2418554463/cpa-plugin-group-billing/tree/v1.3.14-group.1)。完整安装包的 `BUILDINFO.json` 记录实际源码提交，包内外分别提供 SHA-256 校验清单。
 - 本机工具：官方 Go 1.27.1、Zig 0.15.2，下载校验通过。Linux 构建指定 `x86_64-linux-gnu.2.17`、CGO、`c-shared`、`cshared` tag。
 - 构建机是 macOS arm64，真实 CPA 回调 E2E 在 **macOS** 执行。Linux `.so` 已交叉编译并检查 ELF/链接符号，但没有 Linux 执行环境，**尚未做 Linux 动态加载运行验证**。Dockerfile 未运行。这一差异不能用本机 E2E 掩盖。
 - 未验证你的实际 CPA 配置、真实 Keeper 部署/反代/版本、生产流量及其他 CPA 版本。必须按安装指南在目标服务器做小流量验收后再开放用户。

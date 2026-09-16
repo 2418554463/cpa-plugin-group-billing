@@ -1,4 +1,4 @@
-# CPA Group Billing · 1.3.13-group.1
+# CPA Group Billing · 1.3.14-group.1
 
 基于 [haowang02/cpa-plugin-key-billing](https://github.com/haowang02/cpa-plugin-key-billing) v1.3.11 二开的 CLIProxyAPI 分组计费插件，沿用 MIT 许可证与上游署名。**本二开版请使用 [Linux 安装说明](deploy/README.md)，不要运行下方上游文档中的联网安装命令。**
 
@@ -17,7 +17,7 @@
 
 ## 获取与验证
 
-Linux x86_64 安装包见 [v1.3.13-group.1 预发布](https://github.com/2418554463/cpa-plugin-group-billing/releases/tag/v1.3.13-group.1)。下载 `cpa-key-billing_1.3.13-group.1_linux_amd64.tar.gz` 和 `checksums.txt`，核验后按 [安装说明](deploy/README.md) 部署；ZIP 仅包含动态库，供手动/插件管理安装使用。此版本是 Pre-release，不通过 `releases/latest` 或一键更新自动安装。
+Linux x86_64 安装包见 [v1.3.14-group.1 预发布](https://github.com/2418554463/cpa-plugin-group-billing/releases/tag/v1.3.14-group.1)。下载 `cpa-key-billing_1.3.14-group.1_linux_amd64.tar.gz` 和 `checksums.txt`，核验后按 [安装说明](deploy/README.md) 部署；ZIP 仅包含动态库，供手动/插件管理安装使用。此版本是 Pre-release，不通过 `releases/latest` 或一键更新自动安装。
 
 也可在 Linux x86_64 安装 Go 和 gcc 后运行 `bash deploy/build-linux-amd64.sh`，或按部署文档使用 Docker 构建。维护者从干净的已提交源码创建与版本对应的 annotated tag 后，运行 `bash deploy/package-linux-amd64.sh` 可生成完整发布包、源码包和 SHA-256 校验文件；分组预发布不触发上游全平台自动发布流程。
 
@@ -37,7 +37,7 @@ plugins:
 
 官方源会自动保留。让 CPA 加载配置后刷新插件商店，搜索 `CPA Group Billing`，确认仓库为 `2418554463/cpa-plugin-group-billing`。
 
-安装时选择 **手动 tag：`v1.3.13-group.1`**，或者在 GitHub Release 列表中显示预发布版本后选择它；不要选 Latest。清单里的 `version` 仅作为版本展示回退值，不会把默认安装自动固定到预发布版本。
+安装时选择 **手动 tag：`v1.3.14-group.1`**，或者在 GitHub Release 列表中显示预发布版本后选择它；不要选 Latest。清单里的 `version` 仅作为版本展示回退值，不会把默认安装自动固定到预发布版本。
 
 当前只发布 Linux amd64/glibc 包，尚未在 Linux 实际加载验证。此二开版和官方源里的原版共用 `cpa-key-billing` ID：确认安装来源，不能同时运行，也不要误用原版更新。旧面板没有版本选择时，按 [手动安装说明](deploy/README.md) 部署指定版本。
 

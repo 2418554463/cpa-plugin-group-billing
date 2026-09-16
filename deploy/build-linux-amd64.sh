@@ -11,6 +11,8 @@ if [[ "$(uname -s)" != Linux || "$(uname -m)" != x86_64 ]]; then
   export CC="$CPA_BUILD_ZIG cc -target x86_64-linux-gnu.2.17"
 fi
 mkdir -p dist/linux-amd64
+# Strip C compiler debug paths as well as Go symbols from release artifacts.
+export CGO_LDFLAGS="${CGO_LDFLAGS:--O2 -Wl,--strip-debug}"
 CGO_ENABLED=1 GOOS=linux GOARCH=amd64 GOAMD64=v1 "$go_binary" build \
   -trimpath -buildvcs=false -tags cshared -buildmode=c-shared -ldflags='-s -w' \
   -o dist/linux-amd64/cpa-key-billing.so ./cmd/cpa-key-billing

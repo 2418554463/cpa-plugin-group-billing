@@ -1,6 +1,6 @@
 # 分组计费插件安装 · Linux x86_64
 
-版本 `1.3.13-group.1`（Pre-release），在上游 cpa-key-billing `1.3.11` 上二开。它替换原计费插件，与 Usage Keeper 插件并存；不能同时装两份相同 PluginID 的计费动态库。
+版本 `1.3.14-group.1`（Pre-release），在上游 cpa-key-billing `1.3.11` 上二开。它替换原计费插件，与 Usage Keeper 插件并存；不能同时装两份相同 PluginID 的计费动态库。
 
 ## 适用环境
 
@@ -11,7 +11,7 @@
 
 ## 安装或升级
 
-从 [版本页面](https://github.com/2418554463/cpa-plugin-group-billing/releases/tag/v1.3.13-group.1) 下载 `cpa-key-billing_1.3.13-group.1_linux_amd64.tar.gz` 与 `checksums.txt`。先用 `sha256sum` 对比压缩包和清单中同名行，再解压；下面的 `SHA256SUMS` 用于验证解压后的包内文件。ZIP 只有动态库，不含文档；首次部署优先选择完整 tar.gz 包。
+从 [版本页面](https://github.com/2418554463/cpa-plugin-group-billing/releases/tag/v1.3.14-group.1) 下载 `cpa-key-billing_1.3.14-group.1_linux_amd64.tar.gz` 与 `checksums.txt`。先用 `sha256sum` 对比压缩包和清单中同名行，再解压；下面的 `SHA256SUMS` 用于验证解压后的包内文件。ZIP 只有动态库，不含文档；首次部署优先选择完整 tar.gz 包。
 
 1. 停止 CPA，备份旧 `.so` 与计费 SQLite 数据库。停止后备份整个数据库目录，包含可能存在的 `-wal` / `-shm`。保留旧配置和上游凭证。
 2. 在解压目录运行 `sha256sum -c SHA256SUMS`，核对包内文件。
