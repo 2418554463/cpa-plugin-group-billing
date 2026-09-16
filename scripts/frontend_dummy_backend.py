@@ -1241,7 +1241,23 @@ def route_rows():
     return [dict(route, credential_labels=credential_labels(route["rule"].get("credential_ids", []) + route["rule"].get("denied_credential_ids", []))) for route in ROUTES]
 
 
+# UI-only fixtures. These do not simulate quota enforcement or production storage.
+GROUP_UI_GROUPS = []
+GROUP_UI_PLANS = []
+
+
 def payload_for(path, query):
+    group_views = {
+        f"{API_BASE}/v1/groups": {"items": GROUP_UI_GROUPS},
+        f"{API_BASE}/v1/plans": {"items": GROUP_UI_PLANS},
+        f"{API_BASE}/v1/shared-labels": {"items": [], "stale": False},
+        f"{API_BASE}/v1/integrations/keeper/status": {"enabled": False},
+        f"{API_BASE}/v1/audit": {"items": [], "next_cursor": None},
+        f"{API_BASE}/v1/keys/group-usage": {"groups": [], "unclassified_records": 0},
+        f"{API_BASE}/v1/key-plan-bindings": {"revision": 0, "active": None, "pending": None},
+    }
+    if path in group_views:
+        return group_views[path]
     if path == f"{API_BASE}/keys":
         refresh_route_counts()
         return {"keys": key_rows()}
@@ -1462,6 +1478,32 @@ class Handler(BaseHTTPRequestHandler):
             self.mutation_view = json.loads(request_body or b"{}")
             request_body = json.dumps(self.mutation_view.get("data") or {}).encode()
         route = self.command, parsed.path
+        if parsed.path in (f"{API_BASE}/v1/groups", f"{API_BASE}/v1/plans") and self.command in ("POST", "PATCH", "PUT"):
+            body = json.loads(request_body or b"{}")
+            is_group = parsed.path.endswith("/groups")
+            collection = GROUP_UI_GROUPS if is_group else GROUP_UI_PLANS
+            identity = "group_id" if is_group else "plan_id"
+            item = next((item for item in collection if item["id"] == body.get(identity)), None)
+            if self.command == "POST":
+                item = {"id": f"ui-demo-{len(collection) + 1}", "revision": 0, "status": "draft", "enabled": True, "bound_key_count": 0}
+                collection.append(item)
+            if item is None:
+                self.send_json(404, {"error": {"message": "dummy fixture not found"}})
+                return
+            item.update({key: value for key, value in body.items() if key not in (identity, "expected_revision", "reason")})
+            item["revision"] += 1
+            self.send_json(200, item)
+            return
+        if parsed.path in (f"{API_BASE}/v1/groups/publish", f"{API_BASE}/v1/groups/archive") and self.command == "POST":
+            body = json.loads(request_body or b"{}")
+            item = next((item for item in GROUP_UI_GROUPS if item["id"] == body.get("group_id")), None)
+            if item is None:
+                self.send_json(404, {"error": {"message": "dummy fixture not found"}})
+                return
+            item["status"] = "published" if parsed.path.endswith("/publish") else "archived"
+            item["revision"] += 1
+            self.send_json(200, item)
+            return
         if route == ("POST", "/v0/management/api-call"):
             body = json.loads(request_body or b"{}")
             auth_index = body.get("auth_index", "")

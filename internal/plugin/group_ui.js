@@ -7,18 +7,77 @@ function clearGroupBilling() {
   $("gb-dialog").close();
 }
 const gbButton = (text, action) => el("button", { type: "button", text, onclick: () => guard(action) });
-const gbField = (label, node) => el("label", {}, el("span", { text: label }), node);
+const gbField = (label, node) => {
+  node.setAttribute("aria-label", label);
+  return el(node.classList.contains("gb-picker") ? "div" : "label", { class: "gb-field" }, el("span", { text: label }), node);
+};
 const gbText = (value = "", maxLength = 80) => el("input", { type: "text", value, maxLength });
 const gbCheck = (label, checked) => {
   const input = el("input", { type: "checkbox", checked });
   return { input, node: el("label", { class: "gb-check" }, input, label) };
 };
 function gbSelect(items, selected, multiple = false) {
+  if (multiple) return gbPicker(items, selected);
   const input = el("select", { multiple });
   for (const [value, text] of items) input.append(el("option", { value, text, selected: multiple ? selected.includes(value) : selected === value }));
   return input;
 }
-const gbSelected = (node) => Array.from(node.selectedOptions, (option) => option.value);
+const gbSelected = (node) => node.gbValues ? node.gbValues() : Array.from(node.selectedOptions, (option) => option.value);
+function gbPicker(items, selected) {
+  const values = new Set(selected), checks = [];
+  const search = el("input", { type: "search", placeholder: "搜索名称…", "aria-label": "搜索选项" });
+  const count = el("span", { class: "gb-count", "aria-live": "polite" });
+  const list = el("div", { class: "gb-picker-list" });
+  const empty = el("p", { class: "muted gb-picker-empty", text: "没有匹配项" });
+  const node = el("div", { class: "gb-picker", role: "group" }, el("div", { class: "gb-picker-head" }, search, count), list);
+  const update = () => { count.textContent = "已选 " + values.size; };
+  for (const [value, text] of items) {
+    const check = gbCheck(text, values.has(value));
+    check.node.classList.add("gb-option");
+    check.input.onchange = () => {
+      if (check.input.checked) values.add(value); else values.delete(value);
+      update();
+    };
+    checks.push({ ...check, value, text }); list.append(check.node);
+  }
+  list.append(empty);
+  search.oninput = () => {
+    const query = search.value.trim().toLowerCase(); let visible = 0;
+    for (const check of checks) { check.node.hidden = !check.text.toLowerCase().includes(query); if (!check.node.hidden) visible++; }
+    empty.hidden = visible > 0;
+  };
+  node.gbValues = () => [...values];
+  node.gbSetValues = (next) => { values.clear(); next.forEach((value) => values.add(value)); for (const check of checks) check.input.checked = values.has(check.value); update(); };
+  let disabled = false;
+  Object.defineProperty(node, "disabled", { get: () => disabled, set: (value) => {
+    disabled = !!value; search.disabled = disabled;
+    for (const check of checks) check.input.disabled = disabled;
+    node.classList.toggle("gb-disabled", disabled);
+  } });
+  search.oninput(); update(); return node;
+}
+function gbSection(title, hint, ...children) {
+  return el("section", { class: "gb-section" }, el("h3", { text: title }), el("p", { class: "muted", text: hint }), ...children);
+}
+function gbTabs(sections) {
+  const nav = el("div", { class: "gb-tabs", role: "tablist", "aria-label": "资源组设置" });
+  const panels = sections.map(([title, panel], index) => {
+    panel.id = "gb-panel-" + index; panel.setAttribute("role", "tabpanel"); panel.setAttribute("aria-labelledby", "gb-tab-" + index);
+    const tab = el("button", { type: "button", id: "gb-tab-" + index, role: "tab", "aria-controls": panel.id, text: "0" + (index + 1) + "  " + title });
+    nav.append(tab); return { tab, panel };
+  });
+  const activate = (index) => panels.forEach(({ tab, panel }, i) => {
+    tab.setAttribute("aria-selected", String(i === index)); tab.tabIndex = i === index ? 0 : -1; panel.hidden = i !== index;
+  });
+  panels.forEach(({ tab }, index) => {
+    tab.onclick = () => activate(index);
+    tab.onkeydown = (event) => {
+      const next = event.key === "ArrowRight" ? (index + 1) % panels.length : event.key === "ArrowLeft" ? (index + panels.length - 1) % panels.length : event.key === "Home" ? 0 : event.key === "End" ? panels.length - 1 : null;
+      if (next !== null) { event.preventDefault(); activate(next); panels[next].tab.focus(); }
+    };
+  });
+  activate(0); return el("div", { class: "gb-tab-layout" }, nav, ...panels.map(({ panel }) => panel));
+}
 function gbEditor(title, fields, save, buttonText = "保存") {
   const dialog = $("gb-dialog"), generation = sessionGeneration;
   const error = el("p", { role: "alert", class: "bad" });
@@ -33,7 +92,12 @@ function gbEditor(title, fields, save, buttonText = "保存") {
     } catch (err) { if (generation === sessionGeneration) error.textContent = err.message || String(err); }
     finally { button.disabled = false; cancel.disabled = false; }
   });
-  $("gb-editor").replaceChildren(el("h2", { text: title }), ...fields, error, el("div", { class: "row spread" }, cancel, button));
+  button.classList.add("primary");
+  $("gb-editor").replaceChildren(
+    el("header", { class: "gb-dialog-header" }, el("span", { class: "gb-eyebrow", text: "分组订阅 · 配置" }), el("h2", { id: "gb-dialog-title", text: title })),
+    el("div", { class: "gb-dialog-body" }, ...fields),
+    el("footer", { class: "gb-dialog-footer" }, error, el("div", { class: "row", style: "justify-content:flex-end;gap:10px" }, cancel, button)));
+  dialog.setAttribute("aria-labelledby", "gb-dialog-title");
   if (!dialog.open) dialog.showModal();
 }
 function gbRequire(input, name) { const value = input.value.trim(); if (!value) throw new Error("请填写" + name); return value; }
@@ -60,9 +124,11 @@ function gbRender() {
     const actions = el("div", { class: "row", style: "flex-wrap:wrap;gap:8px" }, gbButton("编辑", () => gbEditGroup(g)));
     if (g.status === "draft") actions.append(gbButton("发布", () => gbPublish(g, false)));
     if (g.status === "published") actions.append(gbButton("归档", () => gbPublish(g, true)));
-    return el("div", { class: "card" }, el("h3", { text: g.name }),
-      el("p", { class: "muted", text: ({ draft: "草稿", published: "已发布", archived: "已归档" }[g.status]) + (g.enabled ? " · 启用" : " · 停用") + " · r" + g.revision }),
-      el("p", { text: g.models.join(" · ") }),
+    return el("div", { class: "card gb-resource-card" }, el("div", { class: "row spread" }, el("h3", { text: g.name }),
+      el("span", { class: "gb-badge", text: ({ draft: "草稿", published: "已发布", archived: "已归档" }[g.status]) + (g.enabled ? "" : " · 停用") })),
+      el("p", { class: "muted", text: g.models.length + " 个模型 · 修订 " + g.revision }),
+      ...(g.description ? [el("p", { class: "muted", text: g.description })] : []),
+      el("div", { class: "gb-chips" }, ...g.models.map((model) => el("span", { class: "gb-chip", text: model }))),
       el("p", { class: "muted", text: g.pool.mode === "inherit" ? "继承 CPA 候选池，再应用排除项" : "指定凭证 / 供应商池，与 Key 原权限取交集" }), actions);
   }));
   if (!gbData.groups.length) $("gb-groups").textContent = "尚无资源组。请从 CPA 模型目录选择或输入精确模型 ID。";
@@ -90,9 +156,10 @@ function gbEditGroup(group) {
   const enabled = gbCheck("启用此组", group?.enabled ?? true);
   const models = el("textarea", { value: (group?.models || []).join("\n"), disabled: !!group && group.status !== "draft", placeholder: "每行一个精确模型 ID（支持别名，不猜测前缀）" });
   models.value = (group?.models || []).join("\n");
-  const catalog = gbSelect((resources.admin.models.value || []).map((id) => [id, id]), [], true);
-  const append = gbButton("加入已选模型", () => { models.value = [...new Set([...models.value.split("\n").filter(Boolean), ...gbSelected(catalog)])].join("\n"); });
-  append.disabled = models.disabled;
+  const catalog = gbSelect([...new Set([...(resources.admin.models.value || []), ...(group?.models || [])])].map((id) => [id, id]), group?.models || [], true);
+  catalog.disabled = models.disabled;
+  catalog.addEventListener("change", () => { models.value = gbSelected(catalog).join("\n"); });
+  models.oninput = () => catalog.gbSetValues(models.value.split("\n").map((v) => v.trim()).filter(Boolean));
   const pool = group?.pool || { mode: "inherit" };
   const mode = gbSelect([["inherit", "继承候选池"], ["selected", "指定允许池"]], pool.mode);
   const credentials = resources.admin.credentials.value || [];
@@ -107,12 +174,18 @@ function gbEditGroup(group) {
   const allowClass = gbSelect(classes, (pool.allow_classes || []).map((v) => JSON.stringify(v)), true);
   const denyClass = gbSelect(classes, (pool.deny_classes || []).map((v) => JSON.stringify(v)), true);
   const sync = () => { allow.disabled = allowClass.disabled = mode.value !== "selected"; }; mode.onchange = sync; sync();
-  gbEditor(group ? "编辑资源组" : "新建资源组", [gbField("组名", name), gbField("描述", description), enabled.node,
-    gbField("CPA 模型目录（多选）", catalog), append, gbField("组内模型：发布后成员冻结", models), gbField("凭证池模式", mode),
-    gbField("允许供应商 / 凭证类别（包含未来新增凭证）", allowClass), gbField("允许指定凭证", allow),
-    gbField("排除供应商 / 类别", denyClass), gbField("排除指定凭证", deny),
-    el("p", { class: "muted", text: "多选可按 Ctrl / Cmd；手机使用系统选择器。排除优先，不会跨组回退。" }),
-    ...(group ? [gbField("修改理由", reason)] : [])], async () => {
+  name.placeholder = "例如：高性能模型（名称可自定义）";
+  description.placeholder = "可选，说明这个组的用途";
+  const basic = gbSection("基本信息", "先给资源组起一个容易识别的名字。额度与并发稍后在订阅计划中配置。",
+    gbField("组名", name), gbField("描述", description), ...(group ? [enabled.node, gbField("修改理由", reason)] : []));
+  const modelPanel = gbSection("选择模型", models.disabled ? "此组已发布，模型成员已冻结。" : "直接勾选即可加入，支持搜索。发布后模型成员将冻结。",
+    gbField("CPA 模型目录", catalog), el("details", { class: "gb-advanced" }, el("summary", { text: "手动输入模型 ID / 别名" }), gbField("每行一个精确模型 ID", models)));
+  const poolPanel = gbSection("凭证池", "控制模型可以使用哪些上游。排除优先，并与 Key 原权限取交集，不会跨组回退。",
+    gbField("凭证池模式", mode), el("div", { class: "gb-two-col" },
+      gbField("允许供应商 / 类别（含未来新增凭证）", allowClass), gbField("允许指定凭证", allow)),
+    el("details", { class: "gb-advanced", open: !!(pool.deny_refs?.length || pool.deny_classes?.length) }, el("summary", { text: "排除规则" }),
+      el("div", { class: "gb-two-col" }, gbField("排除供应商 / 类别", denyClass), gbField("排除指定凭证", deny))));
+  gbEditor(group ? "编辑资源组" : "新建资源组", [gbTabs([["基本信息", basic], ["模型范围", modelPanel], ["凭证池", poolPanel]])], async () => {
     const body = { name: gbRequire(name, "组名"), description: description.value, pool: {
       mode: mode.value, allow_refs: mode.value === "selected" ? gbSelected(allow) : [],
       allow_classes: mode.value === "selected" ? gbSelected(allowClass).map((v) => JSON.parse(v)) : [],
@@ -142,7 +215,10 @@ function gbEditPlan(plan) {
     const noSlots = gbCheck("并发不限", !!policy && policy.concurrency_limit === null);
     const sync = () => { daily.disabled = !include.input.checked || noMoney.input.checked; concurrency.disabled = !include.input.checked || noSlots.input.checked; };
     for (const checkbox of [include, noMoney, noSlots]) checkbox.input.onchange = sync; sync();
-    fields.push(el("div", { class: "card" }, include.node, enabled.node, gbField("每人每日 USD（十进制）", daily), noMoney.node, gbField("每人同时并发", concurrency), noSlots.node));
+    fields.push(el("div", { class: "card gb-policy" }, el("div", { class: "row spread" }, include.node, enabled.node),
+      el("div", { class: "gb-two-col" },
+        el("div", { class: "gb-section" }, gbField("每人每日额度 · USD", daily), noMoney.node),
+        el("div", { class: "gb-section" }, gbField("每人同时并发", concurrency), noSlots.node))));
     rows.push({ group, include, enabled, daily, concurrency, noMoney, noSlots });
   }
   if (plan) fields.push(gbField("修改理由", reason));
