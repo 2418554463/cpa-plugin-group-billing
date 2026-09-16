@@ -25,6 +25,22 @@ Linux x86_64 安装包见 [v1.3.13-group.1 预发布](https://github.com/2418554
 
 [实际接口](deploy/API.md) · [验证记录与未验证项](deploy/VERIFICATION.md) · [V1 设计记录](docs/v1/README.md)
 
+## 自定义插件源
+
+本仓库提供 [registry.json](https://raw.githubusercontent.com/2418554463/cpa-plugin-group-billing/main/registry.json)，可以作为 CPA 的附加插件源。在现有配置的 `plugins` 节点下合并以下字段，保留原有 `enabled`、`dir`、`configs` 及其他自定义源：
+
+```yaml
+plugins:
+  store-sources:
+    - "https://raw.githubusercontent.com/2418554463/cpa-plugin-group-billing/main/registry.json"
+```
+
+官方源会自动保留。让 CPA 加载配置后刷新插件商店，搜索 `CPA Group Billing`，确认仓库为 `2418554463/cpa-plugin-group-billing`。
+
+安装时选择 **手动 tag：`v1.3.13-group.1`**，或者在 GitHub Release 列表中显示预发布版本后选择它；不要选 Latest。清单里的 `version` 仅作为版本展示回退值，不会把默认安装自动固定到预发布版本。
+
+当前只发布 Linux amd64/glibc 包，尚未在 Linux 实际加载验证。此二开版和官方源里的原版共用 `cpa-key-billing` ID：确认安装来源，不能同时运行，也不要误用原版更新。旧面板没有版本选择时，按 [手动安装说明](deploy/README.md) 部署指定版本。
+
 ## 上游功能文档（原版）
 
 以下保留上游文档供原有功能参考，其中徽章、截图、release/install 链接属于原版，不代表本二开版的发布或测试状态，也不包含本二开功能。
