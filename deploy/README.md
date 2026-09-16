@@ -1,6 +1,6 @@
 # 分组计费插件安装 · Linux x86_64
 
-版本 `1.3.12-group.1`，在上游 cpa-key-billing `1.3.11` 上二开。它替换原计费插件，与 Usage Keeper 插件并存；不能同时装两份相同 PluginID 的计费动态库。
+版本 `1.3.13-group.1`（Pre-release），在上游 cpa-key-billing `1.3.11` 上二开。它替换原计费插件，与 Usage Keeper 插件并存；不能同时装两份相同 PluginID 的计费动态库。
 
 ## 适用环境
 
@@ -11,6 +11,8 @@
 
 ## 安装或升级
 
+从 [版本页面](https://github.com/2418554463/cpa-plugin-group-billing/releases/tag/v1.3.13-group.1) 下载 `cpa-key-billing_1.3.13-group.1_linux_amd64.tar.gz` 与 `checksums.txt`。先用 `sha256sum` 对比压缩包和清单中同名行，再解压；下面的 `SHA256SUMS` 用于验证解压后的包内文件。ZIP 只有动态库，不含文档；首次部署优先选择完整 tar.gz 包。
+
 1. 停止 CPA，备份旧 `.so` 与计费 SQLite 数据库。停止后备份整个数据库目录，包含可能存在的 `-wal` / `-shm`。保留旧配置和上游凭证。
 2. 在解压目录运行 `sha256sum -c SHA256SUMS`，核对包内文件。
 3. 将包里的 `cpa-key-billing.so` 放入你的 CPA `plugins/`。旧库移到该目录以外的备份目录，避免加载两份。动态库和目录须让 CPA 运行用户可读；数据库目录须可写。
@@ -19,7 +21,7 @@
 6. 启动 CPA。首次加载将计费数据库事务迁移至 v15，保留旧事件和旧套餐。检查插件已启用、无加载/迁移错误。
 7. 在管理面板打开“API Key 计费 → 分组订阅”；也可打开 `/v0/resource/plugins/cpa-key-billing/ui` 并用管理密钥登录。
 
-二开源码仓库为 [2418554463/cpa-plugin-group-billing](https://github.com/2418554463/cpa-plugin-group-billing)，插件仓库元数据指向此地址；当前尚未发布 GitHub Release 安装包。**不要运行上游联网安装脚本或点击上游一键更新**，否则可能被原版覆盖。源码构建只生成动态库；上面的校验文件和示例文件步骤适用于完整交付包。
+二开源码仓库为 [2418554463/cpa-plugin-group-billing](https://github.com/2418554463/cpa-plugin-group-billing)，插件仓库元数据指向此地址。此版本是预发布，`releases/latest` 和原一键安装脚本不会自动选中它，请手动下载指定版本。**不要运行上游联网安装脚本或点击上游一键更新**，否则可能被原版覆盖。源码构建只生成动态库；上面的校验文件和示例文件步骤适用于完整交付包。
 
 ## 第一次配置
 

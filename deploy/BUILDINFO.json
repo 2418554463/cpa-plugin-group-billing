@@ -1,6 +1,6 @@
 {
   "plugin_id": "cpa-key-billing",
-  "version": "1.3.12-group.1",
+  "version": "1.3.13-group.1",
   "upstream_version": "1.3.11",
   "upstream_commit": "0014bc58ed23833c5d949dd05b9f6ab6ea4a2b9d",
   "source_repository": "https://github.com/2418554463/cpa-plugin-group-billing",
@@ -19,5 +19,5 @@
   "native_group_keeper_mock_e2e": "passed",
   "race_tests": "passed",
   "frontend_playwright": "passed; 1440px desktop and 390px mobile",
-  "notes": "Group-billing fork; no GitHub Release package published. Read README.md and VERIFICATION.md before deployment."
+  "notes": "Linux amd64 pre-release, cross-compiled on macOS. Linux dynamic loading and Docker are not runtime-tested. Read README.md and VERIFICATION.md before deployment."
 }

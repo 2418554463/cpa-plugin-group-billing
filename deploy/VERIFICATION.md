@@ -15,7 +15,7 @@
 
 ## 构建来源与未验证项
 
-- 基线：上游 cpa-key-billing v1.3.11，commit `0014bc58ed23833c5d949dd05b9f6ab6ea4a2b9d`；二开源码见 [项目仓库](https://github.com/2418554463/cpa-plugin-group-billing)，尚未发布 GitHub Release 安装包。
+- 基线：上游 cpa-key-billing v1.3.11，commit `0014bc58ed23833c5d949dd05b9f6ab6ea4a2b9d`；二开源码对应 [v1.3.13-group.1](https://github.com/2418554463/cpa-plugin-group-billing/tree/v1.3.13-group.1)。完整安装包的 `BUILDINFO.json` 记录实际源码提交，包内外分别提供 SHA-256 校验清单。
 - 本机工具：官方 Go 1.27.1、Zig 0.15.2，下载校验通过。Linux 构建指定 `x86_64-linux-gnu.2.17`、CGO、`c-shared`、`cshared` tag。
 - 构建机是 macOS arm64，真实 CPA 回调 E2E 在 **macOS** 执行。Linux `.so` 已交叉编译并检查 ELF/链接符号，但没有 Linux 执行环境，**尚未做 Linux 动态加载运行验证**。Dockerfile 未运行。这一差异不能用本机 E2E 掩盖。
 - 未验证你的实际 CPA 配置、真实 Keeper 部署/反代/版本、生产流量及其他 CPA 版本。必须按安装指南在目标服务器做小流量验收后再开放用户。

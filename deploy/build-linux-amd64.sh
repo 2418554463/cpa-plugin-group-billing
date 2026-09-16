@@ -11,7 +11,7 @@ if [[ "$(uname -s)" != Linux || "$(uname -m)" != x86_64 ]]; then
   export CC="$CPA_BUILD_ZIG cc -target x86_64-linux-gnu.2.17"
 fi
 mkdir -p dist/linux-amd64
-CGO_ENABLED=1 GOOS=linux GOARCH=amd64 "$go_binary" build \
+CGO_ENABLED=1 GOOS=linux GOARCH=amd64 GOAMD64=v1 "$go_binary" build \
   -trimpath -buildvcs=false -tags cshared -buildmode=c-shared -ldflags='-s -w' \
   -o dist/linux-amd64/cpa-key-billing.so ./cmd/cpa-key-billing
 echo "Built: $repo_dir/dist/linux-amd64/cpa-key-billing.so"

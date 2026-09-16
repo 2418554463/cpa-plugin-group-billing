@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+      # Group pre-releases use deploy/package-linux-amd64.sh and a reviewed upload.
+      - "!v*-group.*"
   workflow_dispatch:
     inputs:
       release_tag:
@@ -25,6 +27,7 @@ env:
 jobs:
   check:
     name: Verify tagged source
+    if: ${{ !contains(inputs.release_tag || github.ref_name, '-group.') }}
     uses: ./.github/workflows/check.yml
     with:
       checkout_ref: ${{ inputs.release_tag || github.ref }}
@@ -33,6 +36,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.target }}
+    if: ${{ !contains(inputs.release_tag || github.ref_name, '-group.') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:

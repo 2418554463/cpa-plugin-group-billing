@@ -1,0 +1,18 @@
+name: Group release check
+
+on:
+  push:
+    tags:
+      - "v*-group.*"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Verify group release source
+    uses: ./.github/workflows/check.yml
+    with:
+      checkout_ref: ${{ github.ref }}
+      release_tag: ${{ github.ref_name }}
+      verify_release_version: true
