@@ -1,0 +1,13 @@
+# Merge with YOUR existing CPA service, preserving its image/config/auth mounts.
+# The example service name is cli-proxy-api; replace it with your actual name.
+services:
+  cli-proxy-api:
+    platform: linux/amd64
+    environment:
+      CPA_KEEPER_PASSWORD: ${CPA_KEEPER_PASSWORD:-}
+    volumes:
+      - ./plugins:/CLIProxyAPI/plugins:ro
+      - ./billing-data:/CLIProxyAPI/data
+# Configure keeper_url to its reachable Docker service name or HTTPS URL.
+# 127.0.0.1 inside a container is NOT another container/the host.
+# A glibc-based, plugin-enabled CPA image is required. Not Alpine/no-plugin.

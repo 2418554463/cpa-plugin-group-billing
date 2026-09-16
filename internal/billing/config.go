@@ -12,6 +12,8 @@ import (
 const DefaultStateFile = "plugins/cpa-key-billing-state-v1.db"
 
 type Config struct {
+	KeeperURL            string `yaml:"keeper_url"`
+	KeeperPasswordEnv    string `yaml:"keeper_password_env"`
 	Enabled              bool   `yaml:"enabled"`
 	Debug                bool   `yaml:"debug"`
 	StateFile            string `yaml:"state_file"`

@@ -2001,6 +2001,19 @@
       #keys-body tr.key-deleted { background: color-mix(in srgb, var(--text-secondary) 5%, transparent); color: var(--text-secondary); }
       #keys-body tr.key-deleted .quota-window { opacity: 0.65; }
       #keys-body tr.key-deleted .quota-fill { background: var(--text-tertiary); }
+      .gb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; margin: 12px 0 24px; }
+      .gb-grid > *, #gb-editor > * { min-width: 0; overflow-wrap: anywhere; }
+      #gb-key { width: 100%; min-width: 0; max-width: 100%; }
+      #gb-dialog { width: min(720px, 94vw); max-height: 90vh; overflow: auto; }
+      #gb-editor { display: grid; gap: 14px; }
+      #gb-editor label { display: grid; gap: 6px; }
+      #gb-editor label.gb-check { display: flex; align-items: center; gap: 8px; }
+      #gb-editor .gb-check input { width: auto; }
+      #gb-editor textarea, #gb-editor select, #gb-editor input:not([type="checkbox"]) { width: 100%; min-width: 0; }
+      #gb-editor select[multiple] { min-height: 110px; }
+      #gb-editor textarea { min-height: 90px; }
+      #gb-audit details { border-bottom: 1px solid var(--border); padding: 12px 0; }
+      #gb-audit pre { white-space: pre-wrap; overflow-wrap: anywhere; }
     </style>
     <script>
       "use strict";
@@ -2134,6 +2147,7 @@
           <div class="tabs-scroll">
             <div class="tabs">
               <button data-tab="keys" class="active">API Key</button>
+              <button data-tab="group-billing">分组订阅</button>
               <button data-tab="analysis">分析</button>
               <button data-tab="request-events">请求事件</button>
               <button data-tab="errors">错误事件</button>
@@ -2185,6 +2199,15 @@
           </div>
         </section>
 
+        <section id="tab-group-billing" class="hidden">
+          <div class="card"><h2>分组订阅</h2><p class="muted">模型、组名和供应商均可自定义。按 Key × 资源组独立限额、独立并发，北京时间零点重置。usage 后结算，在途请求可能超额。</p><div id="gb-status" role="status"></div><div class="row" style="flex-wrap:wrap;gap:8px"><button id="gb-new-group">新建资源组</button><button id="gb-new-plan">新建分组计划</button><button id="gb-bind">绑定 / 切换计划</button></div></div>
+          <h2>资源组</h2><div id="gb-groups" class="gb-grid"></div>
+          <h2>订阅计划</h2><div id="gb-plans" class="gb-grid"></div>
+          <div class="card"><h2>Key 分组用量</h2><label for="gb-key">选择 Key</label><select id="gb-key"></select><div id="gb-binding" class="muted"></div><div id="gb-usage" class="gb-grid"></div></div>
+          <div class="card"><div class="row spread"><h2>Keeper 共享备注</h2><button id="gb-refresh-labels">立即同步</button></div><p class="muted">Keeper 是唯一备注来源；修改别名会回写 Keeper。CPA 原始 note 只读。未配置 Keeper 时保留原本地 Key 备注。</p><div id="gb-keeper-status"></div><div id="gb-labels" class="gb-grid"></div></div>
+          <div class="card"><h2>修改记录</h2><div id="gb-audit"></div><button id="gb-more-audit" class="hidden">加载更早记录</button></div>
+        </section>
+        <dialog id="gb-dialog"><div id="gb-editor"></div></dialog>
         <section id="tab-analysis" class="hidden"><div id="analysis-body"></div></section>
 
         <section id="tab-plans" class="hidden">
@@ -2408,6 +2431,7 @@
           </div>
           <div id="account-shared-time-backdrop" class="time-range-backdrop hidden"></div>
           <section id="account-tab-subscription">
+            <div id="account-group-usage" class="gb-grid"></div>
             <div class="stats account-subscription-stats">
               <div class="card account-plan">
                 <div class="row spread">
@@ -2500,7 +2524,7 @@
     <footer class="page-footer">
       <span>© 2026 <a href="https://github.com/haowang02/cpa-plugin-key-billing" target="_blank" rel="noopener noreferrer">CPA Key Billing</a></span>
       <span>&thinsp;·&thinsp;<a href="https://github.com/haowang02/cpa-plugin-key-billing/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></span>
-      <span>&thinsp;·&thinsp;Version: v1.3.11</span>
+      <span>&thinsp;·&thinsp;Version: v1.3.12-group.1</span>
     </footer>
 
     <div id="notice" class="notice" popover="manual"></div>
@@ -2590,7 +2614,7 @@
 
       const embedded = window.parent !== window;
       document.body.classList.toggle("embedded", embedded);
-      const ADMIN_TAB_IDS = ["keys", "analysis", "request-events", "errors", "auth-files", "settings"];
+      const ADMIN_TAB_IDS = ["keys", "group-billing", "analysis", "request-events", "errors", "auth-files", "settings"];
       const ACCOUNT_TAB_IDS = ["subscription", "analysis", "request-events", "errors", "auth-files"];
       const PAGE_ROUTE_KEY = "cpa-key-billing.route.v1." + (embedded ? "embedded" : "standalone");
 
@@ -3567,6 +3591,7 @@
 
       function showGate(mode, error) {
         sessionGeneration++;
+        clearGroupBilling();
         hideNotice();
         hideCostTooltip();
         try { sessionStorage.removeItem(SESSION_CREDENTIAL_PREFIX + mode); } catch (_) {}
@@ -4219,6 +4244,7 @@
             ]
           };
         } else {
+          result["group-billing"] = { sections: [] };
           const keyFilter = keyedSection(["eventKeys"], renderEventKeys);
           for (const tab of ["analysis", "request-events", "errors"]) result[tab].sections.unshift(keyFilter);
           result.keys = { editors: ["route"], sections: [keyedSection(["keys", "plans", "routes", "credentials"], renderKeys)] };
@@ -4284,6 +4310,7 @@
           if (account) await loadDataGroup(true, "profile", reload);
           if (generation !== sessionGeneration || currentPage() !== page) return;
           const tasks = [];
+          if (!account && activeTab(false) === "group-billing") tasks.push(loadGroupBilling());
           if (!account || resources.account.profile.value?.tracked) {
             tasks.push(...page.groups.map((name) => loadDataGroup(account, name, reload)));
             if (page.sources.includes(eventKeysQuery)) tasks.push(readEventKeys(reload));
@@ -4397,6 +4424,9 @@
 
       function renderAccountSubscription() {
         const data = resources.account.subscription;
+        const grouped = data.value?.grouped;
+        $("account-group-usage").replaceChildren(...(grouped?.groups || []).map((item) => groupUsageCard(item, false)));
+        document.querySelector(".account-subscription-stats").classList.toggle("hidden", !!grouped?.plan_id);
         const subscription = data.value?.subscription || {};
         const concurrency = data.value?.concurrency || {};
         $("account-concurrency").textContent = !data.value
@@ -8567,6 +8597,7 @@
         ui.bulk.onclick = () => guard(() => refreshFilteredAuthQuotas(account));
       }
 
+      // GROUP_BILLING_UI
       const TABS = Array.from(document.querySelectorAll(".tabs button[data-tab]"));
       function setAdminTab(name) {
         if (editors.get($("route-picker"))?.saving) return;
@@ -8579,9 +8610,18 @@
           tab.setAttribute("aria-selected", String(active));
         }
         const visible = selected === "settings" ? new Set(["plans", "routes", "prices", "plugin-logs"]) : new Set([selected]);
-        for (const section of ["keys", "analysis", "plans", "routes", "prices", "request-events", "errors", "auth-files", "plugin-logs"]) {
-          $("tab-" + section).classList.toggle("hidden", !visible.has(section));
-        }
+        for (const section of [
+          "keys",
+          "group-billing",
+          "analysis",
+          "plans",
+          "routes",
+          "prices",
+          "request-events",
+          "errors",
+          "auth-files",
+          "plugin-logs"
+        ]) { $("tab-" + section).classList.toggle("hidden", !visible.has(section)); }
         $("shared-time-filter").classList.toggle("hidden", !["analysis", "request-events", "errors"].includes(selected));
         $("events-export").classList.toggle("hidden", !["request-events", "errors"].includes(selected));
         if (!["analysis", "request-events", "errors"].includes(selected)) { closeSharedTimePopover(false); }

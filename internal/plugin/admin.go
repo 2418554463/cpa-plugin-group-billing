@@ -25,9 +25,11 @@ type routeRow struct {
 }
 
 func (a *App) keyRows() []keyRow {
+	_ = a.refreshKeeper(false)
 	keys := a.store.KeyViews()
 	rows := make([]keyRow, 0, len(keys))
 	for _, key := range keys {
+		key.Label = a.sharedKeyLabel(key.Scope, key.Label)
 		names := make(map[string]string)
 		for _, id := range key.RouteBindings.RouteIDs {
 			if route, ok := a.store.Route(id); ok {
@@ -295,6 +297,12 @@ func (a *App) labelKey(req ManagementRequest) ManagementResponse {
 	}
 	if errDecode := decodeStrict(req.Body, &body); errDecode != nil {
 		return errorResponse(errDecode)
+	}
+	a.keeperMu.Lock()
+	shared := a.keeper != nil
+	a.keeperMu.Unlock()
+	if shared {
+		return a.updateSharedLabel("downstream_key", body.Scope, body.Label, nil)
 	}
 	if errLabel := a.store.SetLabel(body.Scope, body.Label); errLabel != nil {
 		return errorResponse(errLabel)

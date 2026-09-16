@@ -5,19 +5,20 @@ import "time"
 // RequestEvent is one persisted request record and never stores a plaintext API key.
 // Account contains only an OAuth identity or masked API key.
 type RequestEvent struct {
-	At              time.Time `json:"at"`
-	Scope           string    `json:"scope"`
-	AuthIndex       string    `json:"auth_index,omitempty"`
-	Provider        string    `json:"provider,omitempty"`
-	Account         string    `json:"account,omitempty"`
-	ExecutorType    string    `json:"executor_type,omitempty"`
-	ReasoningEffort string    `json:"reasoning_effort,omitempty"`
-	ServiceTier     string    `json:"service_tier,omitempty"`
-	UpstreamModel   string    `json:"upstream_model,omitempty"`
-	BillingModel    string    `json:"billing_model,omitempty"`
-	Failed          bool      `json:"failed"`
-	LatencyMS       int64     `json:"latency_ms,omitempty"`
-	TTFTMS          int64     `json:"ttft_ms,omitempty"`
+	Group           *GroupAttribution `json:"group,omitempty"`
+	At              time.Time         `json:"at"`
+	Scope           string            `json:"scope"`
+	AuthIndex       string            `json:"auth_index,omitempty"`
+	Provider        string            `json:"provider,omitempty"`
+	Account         string            `json:"account,omitempty"`
+	ExecutorType    string            `json:"executor_type,omitempty"`
+	ReasoningEffort string            `json:"reasoning_effort,omitempty"`
+	ServiceTier     string            `json:"service_tier,omitempty"`
+	UpstreamModel   string            `json:"upstream_model,omitempty"`
+	BillingModel    string            `json:"billing_model,omitempty"`
+	Failed          bool              `json:"failed"`
+	LatencyMS       int64             `json:"latency_ms,omitempty"`
+	TTFTMS          int64             `json:"ttft_ms,omitempty"`
 	// AccountingQuality is empty when the host reported no token detail.
 	AccountingQuality TokenAccountingQuality `json:"accounting_quality,omitempty"`
 	// PriceSource says where the numbers came from. "none" means no rule
@@ -42,6 +43,7 @@ type RequestEventRow struct {
 
 // RequestEventQuery selects one filtered page of request events.
 type RequestEventQuery struct {
+	GroupID string
 	// Scope is an internal authorization boundary. Callers never select it from
 	// a query parameter: account endpoints derive it from the presented API key.
 	Scope          string

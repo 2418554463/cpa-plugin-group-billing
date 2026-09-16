@@ -145,7 +145,7 @@ func (a *App) pickCredential(raw []byte) ([]byte, error) {
 	if a == nil || a.store == nil || !a.store.Enabled() {
 		return OKEnvelope(SchedulerPickResponse{Handled: false})
 	}
-	if metadataString(req.Options.Metadata, MetadataSource) == SourcePluginHostModelCallback {
+	if metadataString(req.Options.Metadata, MetadataSource) == SourcePluginHostModelCallback && !a.store.IsGrouped(metadataString(req.Options.Metadata, MetadataCallerScope), a.store.Now()) {
 		return OKEnvelope(SchedulerPickResponse{Handled: false})
 	}
 	a.observeCandidates(req.Candidates)
@@ -158,19 +158,26 @@ func (a *App) pickCredential(raw []byte) ([]byte, error) {
 		requestedModel = req.Model
 	}
 	decision := a.store.ResolveRouting(scope, req.Model, requestedModel)
+	groupPool, grouped, groupAllowed := a.store.GroupCredentialPolicy(scope, req.Model, requestedModel)
+	if grouped && !groupAllowed {
+		return ErrorEnvelope("group_disabled", "资源组不可用或未被套餐授权", http.StatusForbidden), nil
+	}
 	if decision.ConfigurationError != "" {
 		return ErrorEnvelope("routing_configuration_error", decision.ConfigurationError, http.StatusServiceUnavailable), nil
 	}
-	if !decision.RestrictsCredentials() {
+	if !decision.RestrictsCredentials() && !grouped {
 		return OKEnvelope(SchedulerPickResponse{Handled: false})
 	}
 	allowed := make([]SchedulerAuthCandidate, 0, len(req.Candidates))
 	for _, candidate := range req.Candidates {
-		if candidateAllowed(candidate, decision) {
+		if candidateAllowed(candidate, decision) && (!grouped || candidateAllowed(candidate, billing.RoutingDecision{RouteRule: groupPool.Rule()})) {
 			allowed = append(allowed, candidate)
 		}
 	}
 	if len(allowed) == 0 {
+		if grouped {
+			return ErrorEnvelope("group_no_available_credentials", noRoutedCredentialMessage, http.StatusServiceUnavailable), nil
+		}
 		return ErrorEnvelope("no_routed_credential", noRoutedCredentialMessage, http.StatusServiceUnavailable), nil
 	}
 	if len(allowed) == len(req.Candidates) {

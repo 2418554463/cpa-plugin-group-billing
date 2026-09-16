@@ -31,6 +31,8 @@ type Store struct {
 	// process and are correlated exactly by the host-provided request ID.
 	activeRequests map[string]string
 	activeByScope  map[string]int
+	groupSlots     map[string]groupSlot
+	groupActive    map[string]int
 
 	// blocked remembers which keys have already had their exhausted quota
 	// reported, so retries against one do not repeat it.
@@ -54,6 +56,8 @@ func NewStore(open func(string) (Repository, error), downloadReferencePrices fun
 		cfg:                     DefaultConfig(),
 		activeRequests:          make(map[string]string),
 		activeByScope:           make(map[string]int),
+		groupSlots:              make(map[string]groupSlot),
+		groupActive:             make(map[string]int),
 		open:                    open,
 		downloadReferencePrices: downloadReferencePrices,
 		now:                     time.Now,
@@ -138,6 +142,8 @@ func (s *Store) Close() {
 	s.dirty = Changes{}
 	s.activeRequests = make(map[string]string)
 	s.activeByScope = make(map[string]int)
+	s.groupSlots = make(map[string]groupSlot)
+	s.groupActive = make(map[string]int)
 	s.mu.Unlock()
 	previousReferences.close()
 	if repo != nil {
@@ -213,6 +219,7 @@ func editConfiguration[T any](s *Store, fn func(*State) (T, Changes, error)) (T,
 		defer s.mu.Unlock()
 
 		next := *s.state
+		next.Grouped = s.state.Grouped.clone()
 		next.Plans = make([]Plan, len(s.state.Plans))
 		for i, plan := range s.state.Plans {
 			next.Plans[i] = clonePlan(plan)

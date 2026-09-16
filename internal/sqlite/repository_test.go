@@ -154,6 +154,8 @@ func TestFreshSchemaVersionAndTables(t *testing.T) {
 		t.Fatalf("schema version = %d, err = %v", version, err)
 	}
 	want := map[string]bool{
+		"gb_groups": true, "gb_group_models": true, "gb_model_owners": true, "gb_plans": true, "gb_plan_groups": true,
+		"gb_key_states": true, "gb_key_bindings": true, "gb_daily_usage": true, "gb_event_attributions": true, "gb_shared_labels": true, "gb_audit": true,
 		"api_keys": true, "routes": true, "plans": true,
 		"prices": true, "request_events": true, "config_credentials": true,
 		"request_errors": true, "plugin_logs": true, "reference_prices_metadata": true, "reference_prices": true,
@@ -233,7 +235,7 @@ func TestQuotaConfigurationExtendsExistingJSON(t *testing.T) {
 	state.Keys["dummy-scope"].Cycles["w"] = cycle
 	mustSave(t, database, state, billing.Changes{Plans: true, AllKeys: true})
 	var version int
-	if err := database.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != 14 {
+	if err := database.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil || version != schemaVersion {
 		t.Fatalf("schema changed: %d, %v", version, err)
 	}
 	if err := database.Close(); err != nil {

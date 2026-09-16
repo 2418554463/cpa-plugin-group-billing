@@ -94,6 +94,9 @@ func (a *App) interceptBeforeAuth(raw []byte) ([]byte, error) {
 	if helper {
 		// Nested plugin helpers do not consume another client admission slot, but
 		// still need a price: usage.handle can attribute their usage to the client.
+		if decision := a.store.AdmitGroup(scope, "", req.Model, req.RequestedModel, false); decision.Handled && !decision.Allowed {
+			return OKEnvelope(groupRefusal(req.SourceFormat, decision))
+		}
 		return OKEnvelope(RequestInterceptResponse{})
 	}
 	generate := true
@@ -106,6 +109,12 @@ func (a *App) interceptBeforeAuth(raw []byte) ([]byte, error) {
 	defer a.admissionsMu.Unlock()
 	if admission != nil && admission.completed {
 		return OKEnvelope(priceRefusal(req.SourceFormat, "request_completed", "请求已结束"))
+	}
+	if decision := a.store.AdmitGroup(scope, req.RequestID, req.Model, req.RequestedModel, generate); decision.Handled {
+		if !decision.Allowed {
+			return OKEnvelope(groupRefusal(req.SourceFormat, decision))
+		}
+		return OKEnvelope(RequestInterceptResponse{})
 	}
 	slot := billing.SlotDecision{Allowed: true}
 	admitted := false
@@ -414,4 +423,16 @@ func priceRefusal(format, code, message string) RequestInterceptResponse {
 		ResponseHeaders: http.Header{"Content-Type": {"application/json"}},
 		ResponseBody:    refusalBody(format, kind, message),
 	}
+}
+
+func groupRefusal(format string, decision billing.GroupDecision) RequestInterceptResponse {
+	response := priceRefusal(format, decision.Code, decision.Message)
+	response.StatusCode = decision.Status
+	if decision.GroupID != "" {
+		response.ResponseHeaders.Set("X-CPA-Billing-Group", decision.GroupID)
+	}
+	if !decision.RetryAt.IsZero() {
+		response.ResponseHeaders.Set("Retry-After", strconv.Itoa(retryAfterSeconds(decision.RetryAt, time.Now())))
+	}
+	return response
 }

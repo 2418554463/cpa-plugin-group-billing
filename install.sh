@@ -2,7 +2,7 @@
 
 set -eu
 
-repository="haowang02/cpa-plugin-key-billing"
+repository="2418554463/cpa-plugin-group-billing"
 plugin_name="cpa-key-billing"
 plugin_dir="$(pwd)/plugins"
 tmp_dir=""

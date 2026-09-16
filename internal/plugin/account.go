@@ -29,8 +29,10 @@ type accountProfileResponse struct {
 }
 
 type accountSubscriptionResponse struct {
-	Subscription accountSubscription `json:"subscription"`
-	Concurrency  accountConcurrency  `json:"concurrency"`
+	Grouped      billing.GroupKeyUsage    `json:"grouped"`
+	Binding      billing.GroupBindingView `json:"binding"`
+	Subscription accountSubscription      `json:"subscription"`
+	Concurrency  accountConcurrency       `json:"concurrency"`
 }
 
 type accountRoutingResponse struct {
@@ -54,7 +56,7 @@ type accountRouteCredential struct {
 func (a *App) accountProfile(access viewAccess) ManagementResponse {
 	response := accountProfileResponse{Tracked: access.Tracked}
 	if access.Tracked {
-		response.Identity = accountIdentity{Preview: access.Key.Preview, Label: access.Key.Label}
+		response.Identity = accountIdentity{Preview: access.Key.Preview, Label: a.sharedKeyLabel(access.Scope, access.Key.Label)}
 	}
 	return apiKeyJSON(http.StatusOK, response)
 }
@@ -65,6 +67,7 @@ func (a *App) accountSubscription(access viewAccess) ManagementResponse {
 	}
 	view := access.Key
 	return apiKeyJSON(http.StatusOK, accountSubscriptionResponse{
+		Grouped: a.groupUsage(access.Scope), Binding: a.store.GroupBinding(access.Scope),
 		Subscription: accountSubscription{Name: view.PlanName, QuotaView: view.QuotaView},
 		Concurrency:  accountConcurrency{Limit: view.ConcurrencyLimit, Current: view.CurrentConcurrency},
 	})

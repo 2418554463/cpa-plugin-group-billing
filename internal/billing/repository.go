@@ -27,6 +27,10 @@ type Snapshot struct {
 }
 
 type Changes struct {
+	GroupedConfig bool
+	GroupDays     []string
+	GroupLabels   bool
+	GroupAudits   []GroupAudit
 	// Keys lists the scopes to upsert. AllKeys upserts every key in State.
 	Keys    []string
 	AllKeys bool
@@ -43,7 +47,7 @@ type Changes struct {
 const maxPendingRequestRecords = 1000
 
 func (c Changes) empty() bool {
-	return len(c.Keys) == 0 && !c.AllKeys && !c.Plans && !c.Routes && !c.ConfigCredentials &&
+	return !c.GroupedConfig && len(c.GroupDays) == 0 && !c.GroupLabels && len(c.GroupAudits) == 0 && len(c.Keys) == 0 && !c.AllKeys && !c.Plans && !c.Routes && !c.ConfigCredentials &&
 		len(c.NormalRequestEvents) == 0 && len(c.RequestErrorEvents) == 0 && c.RequestEventCutoff.IsZero()
 }
 
@@ -55,6 +59,10 @@ func (c Changes) merge(next Changes) Changes {
 		return c.withBoundedRequestRecords()
 	}
 	merged := Changes{
+		GroupedConfig:       c.GroupedConfig || next.GroupedConfig,
+		GroupDays:           mergeGroupDayKeys(c.GroupDays, next.GroupDays),
+		GroupLabels:         c.GroupLabels || next.GroupLabels,
+		GroupAudits:         append(append([]GroupAudit(nil), c.GroupAudits...), next.GroupAudits...),
 		AllKeys:             c.AllKeys || next.AllKeys,
 		Plans:               c.Plans || next.Plans,
 		Routes:              c.Routes || next.Routes,
@@ -78,6 +86,20 @@ func (c Changes) merge(next Changes) Changes {
 		merged.Keys = append(merged.Keys, scope)
 	}
 	return merged.withBoundedRequestRecords()
+}
+
+func mergeGroupDayKeys(a, b []string) []string {
+	out := []string{}
+	seen := map[string]bool{}
+	for _, values := range [][]string{a, b} {
+		for _, key := range values {
+			if !seen[key] {
+				seen[key] = true
+				out = append(out, key)
+			}
+		}
+	}
+	return out
 }
 
 func (c Changes) withBoundedRequestRecords() Changes {

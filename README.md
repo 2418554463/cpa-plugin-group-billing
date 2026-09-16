@@ -1,3 +1,32 @@
+# CPA Group Billing · 1.3.12-group.1
+
+基于 [haowang02/cpa-plugin-key-billing](https://github.com/haowang02/cpa-plugin-key-billing) v1.3.11 二开的 CLIProxyAPI 分组计费插件，沿用 MIT 许可证与上游署名。**本二开版请使用 [Linux 安装说明](deploy/README.md)，不要运行下方上游文档中的联网安装命令。**
+
+本仓库：[2418554463/cpa-plugin-group-billing](https://github.com/2418554463/cpa-plugin-group-billing)。插件 ID 仍为 `cpa-key-billing`，替换原计费插件，不可同时加载两份。
+
+## 分组版功能
+
+- 动态资源组：模型、组名、供应商和凭证均可配置，不写死任何模型或 A/B 组。
+- 每个 Key × 每个组独立日额度（USD）和并发；显式支持无限额度/无限并发。
+- 分组订阅计划、北京时间次日生效的绑定、日账本、重置与审计；一个 Key 代表一个额度主体。
+- 组级凭证池与原 Key 权限、CPA 候选取交集，不跨组回退。
+- 通过 Keeper API 共享 Key/凭证备注，Keeper 是权威来源，插件 SQLite 仅缓存展示数据。
+- 管理界面“分组订阅”及普通 Key 用户自助查看。
+
+当前只支持单 CPA 实例。额度按宿主 `usage.handle` 上报的 Token 和配置单价后结算，在途请求可能超额；不是供应商真实账单或严格预扣余额。
+
+## 获取与验证
+
+当前仓库提供源码、构建脚本及部署文档，尚未发布 GitHub Release 安装包。在 Linux x86_64 安装 Go 和 gcc 后运行 `bash deploy/build-linux-amd64.sh`，或按部署文档使用 Docker 构建。
+
+本机单元测试、race、真实 CPA v7.2.143 回调 E2E、Keeper 模拟集成与桌面/手机界面测试已通过。Linux `.so` 已交叉编译，但**尚未在 Linux 实际加载运行，Dockerfile 也未实测**；上线前必须在目标环境验收。构建基线和完整测试范围见验证记录。
+
+[实际接口](deploy/API.md) · [验证记录与未验证项](deploy/VERIFICATION.md) · [V1 设计记录](docs/v1/README.md)
+
+## 上游功能文档（原版）
+
+以下保留上游文档供原有功能参考，其中徽章、截图、release/install 链接属于原版，不代表本二开版的发布或测试状态，也不包含本二开功能。
+
 <div align="center">
   <h1>CPA Key Billing</h1>
   <p><strong><a href="https://github.com/router-for-me/CLIProxyAPI">CLIProxyAPI</a> 下游 API Key 计费与订阅额度插件。</strong></p>

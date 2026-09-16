@@ -102,6 +102,10 @@ func TestManagementRegistrationExposesOnlyCurrentEndpoints(t *testing.T) {
 		"POST /credentials/sync",
 		"GET /analysis", "GET /events", "GET /events/keys", "GET /errors",
 		"GET /plugin-logs", "DELETE /plugin-logs", "GET /auth-files", "GET /auth-files/quota",
+		"GET /v1/groups", "POST /v1/groups", "PATCH /v1/groups", "POST /v1/groups/publish", "POST /v1/groups/archive", "POST /v1/groups/preview",
+		"GET /v1/plans", "POST /v1/plans", "PUT /v1/plans", "GET /v1/key-plan-bindings", "PUT /v1/key-plan-bindings", "POST /v1/key-plan-bindings/preview",
+		"GET /v1/keys/group-usage", "POST /v1/keys/group-reset", "GET /v1/audit",
+		"GET /v1/shared-labels", "PATCH /v1/shared-labels", "GET /v1/integrations/keeper/status", "POST /v1/integrations/keeper/refresh",
 	} {
 		wantRoutes[value] = false
 	}
@@ -123,7 +127,8 @@ func TestManagementRegistrationExposesOnlyCurrentEndpoints(t *testing.T) {
 	}
 
 	wantResources := map[string]bool{
-		"/ui": false, "/profile": false, "/subscription": false, "/routing": false, "/prices": false,
+		"/v1/subscription": false,
+		"/ui":              false, "/profile": false, "/subscription": false, "/routing": false, "/prices": false,
 		"/analysis": false, "/events": false, "/errors": false,
 		"/auth-files": false, "/auth-files/quota": false,
 	}

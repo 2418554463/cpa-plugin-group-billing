@@ -6,12 +6,18 @@ import (
 	"maps"
 	"net/http"
 	"sync"
+	"time"
 
 	"cpa-key-billing/internal/billing"
+	"cpa-key-billing/internal/keeper"
 	"cpa-key-billing/internal/sqlite"
 )
 
 type App struct {
+	keeperMu              sync.Mutex
+	keeper                *keeper.Client
+	keeperLast            time.Time
+	keeperError           string
 	store                 *billing.Store
 	hostCaller            HostCaller
 	admissionsMu          sync.Mutex
@@ -109,6 +115,14 @@ func (a *App) configure(raw []byte) error {
 	if errDecode != nil {
 		return errDecode
 	}
+	var keeperClient *keeper.Client
+	if cfg.KeeperURL != "" {
+		var err error
+		keeperClient, err = keeper.New(cfg.KeeperURL, cfg.KeeperPasswordEnv)
+		if err != nil {
+			return err
+		}
+	}
 	if errConfigure := func() error {
 		a.routingMu.Lock()
 		defer a.routingMu.Unlock()
@@ -123,6 +137,11 @@ func (a *App) configure(raw []byte) error {
 	}(); errConfigure != nil {
 		return errConfigure
 	}
+	a.keeperMu.Lock()
+	a.keeper = keeperClient
+	a.keeperLast = time.Time{}
+	a.keeperError = ""
+	a.keeperMu.Unlock()
 	// Refresh records its result; a download failure does not disable custom prices.
 	_, _ = a.store.EnsureReferencePrices()
 	return nil
@@ -137,6 +156,8 @@ func registration() Registration {
 			Author:           PluginName,
 			GitHubRepository: GitHubRepository,
 			ConfigFields: []ConfigField{
+				{Name: "keeper_url", Type: "string", Description: "Keeper 服务地址（含可选子路径），留空保持本地备注"},
+				{Name: "keeper_password_env", Type: "string", Description: "存放 Keeper 管理密码的环境变量名（不是密码本身）"},
 				{
 					Name:        "debug",
 					Type:        "boolean",

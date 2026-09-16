@@ -48,6 +48,9 @@ func appendRequestEvent(tx *sql.Tx, entry billing.RequestEvent) (int64, error) {
 	if errID != nil {
 		return 0, fmt.Errorf("读取请求事件编号：%w", errID)
 	}
+	if err := appendGroupAttribution(tx, id, entry.Group); err != nil {
+		return 0, fmt.Errorf("保存事件归组：%w", err)
+	}
 	return id, nil
 }
 
@@ -139,9 +142,11 @@ func (d *DB) RequestEvents(query billing.RequestEventQuery, since time.Time) (bi
 			r.tiered, r.long_context, r.threshold_input_tokens,
 			r.applied_input_per_1m, r.applied_output_per_1m,
 			r.applied_cache_read_per_1m, r.applied_cache_write_per_1m,
-			coalesce(k.preview, ''), coalesce(k.label, ''), `+requestEventSourceName+`
+			coalesce(k.preview, ''), coalesce(k.label, ''), `+requestEventSourceName+`,
+			coalesce(g.group_id,''),coalesce(g.classification,''),coalesce(g.pricing_status,''),coalesce(g.business_date,''),g.cost_nano_usd,coalesce(g.reason_code,''),coalesce(g.model_key,''),g.mapping_published_at_ns
 		FROM page JOIN request_events r ON r.id = page.id
 		LEFT JOIN api_keys k ON k.scope = r.scope
+		LEFT JOIN gb_event_attributions g ON g.event_id=r.id
 		ORDER BY r.at DESC, r.id DESC`, pageArgs...)
 	if errQuery != nil {
 		return billing.RequestEventView{}, fmt.Errorf("读取请求事件：%w", errQuery)
@@ -162,6 +167,10 @@ func (d *DB) RequestEvents(query billing.RequestEventQuery, since time.Time) (bi
 
 func eventFilter(source string, query billing.RequestEventQuery, since time.Time) (string, []any) {
 	where, args := eventTimeFilter(source, query.From, query.To, since)
+	if query.GroupID != "" {
+		where += " AND r.id IN (SELECT event_id FROM gb_event_attributions WHERE group_id=?)"
+		args = append(args, query.GroupID)
+	}
 	if query.SnapshotID != nil {
 		where += " AND r.id <= ?"
 		args = append(args, *query.SnapshotID)
@@ -244,6 +253,9 @@ func scanRequestEventRow(rows *sql.Rows) (billing.RequestEventRow, error) {
 		row                  billing.RequestEventRow
 		at, failed           int64
 		quality, priceSource string
+		group                billing.GroupAttribution
+		groupCost            sql.NullInt64
+		groupPublished       sql.NullInt64
 	)
 	if errScan := rows.Scan(&row.ID, &at, &row.Scope, &row.AuthIndex, &row.Provider, &row.Account,
 		&row.ExecutorType, &row.ReasoningEffort, &row.ServiceTier,
@@ -257,7 +269,8 @@ func scanRequestEventRow(rows *sql.Rows) (billing.RequestEventRow, error) {
 		&row.Cost.Tiered, &row.Cost.LongContext, &row.Cost.ThresholdInputTokens,
 		&row.Cost.AppliedInputPer1M, &row.Cost.AppliedOutputPer1M,
 		&row.Cost.AppliedCacheReadPer1M, &row.Cost.AppliedCacheWritePer1M,
-		&row.Preview, &row.Label, &row.Source); errScan != nil {
+		&row.Preview, &row.Label, &row.Source,
+		&group.GroupID, &group.Classification, &group.PricingStatus, &group.Date, &groupCost, &group.Reason, &group.ModelKey, &groupPublished); errScan != nil {
 		return billing.RequestEventRow{}, fmt.Errorf("读取请求事件：%w", errScan)
 	}
 	row.At = timeAt(at)
@@ -269,6 +282,14 @@ func scanRequestEventRow(rows *sql.Rows) (billing.RequestEventRow, error) {
 		row.Cost.Multiplier = billing.CodexFastModeMultiplier
 	}
 	row.PriceSource = billing.PriceSource(priceSource)
+	if group.Classification != "" {
+		group.Cost = nullableUSD(groupCost)
+		if groupPublished.Valid {
+			published := timeAt(groupPublished.Int64)
+			group.PublishedAt = &published
+		}
+		row.Group = &group
+	}
 	return row, nil
 }
 

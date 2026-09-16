@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -17,7 +18,12 @@ const (
 )
 
 //go:embed ui.html
-var uiHTML []byte
+var uiTemplate []byte
+
+//go:embed group_ui.js
+var groupUIScript []byte
+
+var uiHTML = bytes.Replace(uiTemplate, []byte("// GROUP_BILLING_UI"), groupUIScript, 1)
 
 const (
 	routeKeys                   = "/keys"

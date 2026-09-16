@@ -58,7 +58,8 @@ func (a *App) listRequestEvents(req ManagementRequest, access viewAccess) Manage
 		return viewJSON(access, http.StatusOK, billing.RequestEventView{Entries: []billing.RequestEventRow{}})
 	}
 	query := billing.RequestEventQuery{
-		Scope: access.Scope, Model: strings.TrimSpace(req.Query.Get("model")),
+		GroupID: strings.TrimSpace(req.Query.Get("group_id")),
+		Scope:   access.Scope, Model: strings.TrimSpace(req.Query.Get("model")),
 		Source: strings.TrimSpace(req.Query.Get("source")), Executor: strings.TrimSpace(req.Query.Get("executor")),
 		Provider: strings.TrimSpace(req.Query.Get("provider")),
 		Limit:    defaultEventPageSize,
@@ -98,7 +99,8 @@ func (a *App) listRequestErrors(req ManagementRequest, access viewAccess) Manage
 		return viewJSON(access, http.StatusOK, billing.RequestErrorView{Entries: []billing.RequestErrorRow{}})
 	}
 	query := billing.RequestErrorQuery{
-		Scope: access.Scope, Model: strings.TrimSpace(req.Query.Get("model")),
+		GroupID: strings.TrimSpace(req.Query.Get("group_id")),
+		Scope:   access.Scope, Model: strings.TrimSpace(req.Query.Get("model")),
 		Source: strings.TrimSpace(req.Query.Get("source")), Executor: strings.TrimSpace(req.Query.Get("executor")),
 		Provider: strings.TrimSpace(req.Query.Get("provider")), ErrorType: strings.TrimSpace(req.Query.Get("error_type")),
 		ErrorTypeEmpty: req.Query.Get("error_type_empty") == "true",
@@ -139,7 +141,7 @@ func (a *App) analysis(req ManagementRequest, access viewAccess) ManagementRespo
 			},
 		})
 	}
-	query := billing.RequestEventQuery{Scope: access.Scope}
+	query := billing.RequestEventQuery{Scope: access.Scope, GroupID: strings.TrimSpace(req.Query.Get("group_id"))}
 	if !access.APIKey {
 		query.KeyScope = strings.TrimSpace(req.Query.Get("api_key"))
 	}

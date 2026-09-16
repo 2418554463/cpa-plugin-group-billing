@@ -1,0 +1,13 @@
+# Merge into the existing CPA config. Do not replace your provider/key settings.
+plugins:
+  enabled: true
+  dir: "plugins"
+  configs:
+    cpa-key-billing:
+      enabled: true
+      debug: false
+      codex_fast_mode_billing: false
+      state_file: "data/cpa-key-billing.db"
+      # Optional: same Keeper used by the usage-keeper plugin. Include subpath.
+      keeper_url: ""
+      keeper_password_env: "CPA_KEEPER_PASSWORD"

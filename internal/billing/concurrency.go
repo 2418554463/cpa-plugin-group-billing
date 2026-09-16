@@ -28,6 +28,10 @@ func (s *Store) AcquireSlot(scope, requestID string) SlotDecision {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if _, exists := s.groupSlots[requestID]; exists {
+		decision.Allowed = false
+		return decision
+	}
 
 	if key := s.state.Keys[scope]; key != nil {
 		decision.Limit = key.ConcurrencyLimit
@@ -69,7 +73,7 @@ func (s *Store) ReleaseSlot(requestID string) bool {
 	defer s.mu.Unlock()
 	scope, exists := s.activeRequests[requestID]
 	if !exists {
-		return false
+		return s.releaseGroupSlotLocked(requestID)
 	}
 	delete(s.activeRequests, requestID)
 	if active := s.activeByScope[scope]; active > 1 {

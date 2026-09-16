@@ -33,7 +33,8 @@ func requestErrorFilter(query billing.RequestErrorQuery, since time.Time) (strin
 	}
 	source += " JOIN request_events r ON r.id = e.request_event_id WHERE r.at >= ?"
 	where, args := eventFilter(source, billing.RequestEventQuery{
-		Scope: query.Scope, KeyScope: query.KeyScope, Model: query.Model,
+		GroupID: query.GroupID,
+		Scope:   query.Scope, KeyScope: query.KeyScope, Model: query.Model,
 		Source: query.Source, Executor: query.Executor, Provider: query.Provider,
 		From: query.From, To: query.To, SnapshotID: query.SnapshotID,
 	}, since)
@@ -108,10 +109,11 @@ func (d *DB) RequestErrors(query billing.RequestErrorQuery, since time.Time) (bi
 		SELECT r.id, r.at, r.scope, coalesce(k.preview, ''), coalesce(k.label, ''),
 		r.auth_index, `+requestEventSourceName+`, r.provider,
 		r.executor_type, r.upstream_model, r.billing_model, r.latency_ms, r.ttft_ms,
-		e.status_code, e.error_type, e.reason, e.body
+		e.status_code, e.error_type, e.reason, e.body,coalesce(g.group_id,'')
 		FROM page JOIN request_events r ON r.id = page.id
 		JOIN request_errors e ON e.request_event_id = r.id
 		LEFT JOIN api_keys k ON k.scope = r.scope
+		LEFT JOIN gb_event_attributions g ON g.event_id=r.id
 		ORDER BY r.at DESC, r.id DESC`, pageArgs...)
 	if err != nil {
 		return billing.RequestErrorView{}, fmt.Errorf("读取错误事件：%w", err)
@@ -122,7 +124,7 @@ func (d *DB) RequestErrors(query billing.RequestErrorQuery, since time.Time) (bi
 		var at int64
 		if err := rows.Scan(&row.ID, &at, &row.Scope, &row.Preview, &row.Label, &row.AuthIndex, &row.Source,
 			&row.Provider, &row.ExecutorType, &row.UpstreamModel, &row.BillingModel, &row.LatencyMS,
-			&row.TTFTMS, &row.StatusCode, &row.ErrorType, &row.Reason, &row.Body); err != nil {
+			&row.TTFTMS, &row.StatusCode, &row.ErrorType, &row.Reason, &row.Body, &row.GroupID); err != nil {
 			return billing.RequestErrorView{}, fmt.Errorf("读取错误事件：%w", err)
 		}
 		row.At = timeAt(at)

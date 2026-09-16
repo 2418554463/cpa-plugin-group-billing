@@ -3,6 +3,7 @@ package sqlite
 
 import (
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"maps"
 	"net/url"
@@ -15,7 +16,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const schemaVersion = 14
+const schemaVersion = 15
+
+//go:embed group_schema.sql
+var groupSchema string
 
 type DB struct {
 	db   *sql.DB
@@ -67,6 +71,7 @@ func (d *DB) initSchema(tx *sql.Tx) error {
 		if err := migrateToV14(tx, version); err != nil {
 			return err
 		}
+	case 14:
 	case schemaVersion:
 		return nil
 	case 0:
@@ -83,6 +88,9 @@ func (d *DB) initSchema(tx *sql.Tx) error {
 		}
 	default:
 		return fmt.Errorf("计费数据库 %s 的文件格式不受支持，请通过 state_file 配置使用其他数据文件", d.path)
+	}
+	if _, err := tx.Exec(groupSchema); err != nil {
+		return fmt.Errorf("迁移分组计费表失败（已回滚）：%w", err)
 	}
 	if _, err := tx.Exec(fmt.Sprintf("PRAGMA user_version = %d", schemaVersion)); err != nil {
 		return fmt.Errorf("标记计费数据库 %s 的格式版本：%w", d.path, err)

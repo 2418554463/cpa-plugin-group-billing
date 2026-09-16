@@ -22,6 +22,7 @@ func (d *DB) Load(requestEventCutoff, pluginLogCutoff time.Time) (billing.Snapsh
 		d.loadPrices,
 		d.loadRoutes,
 		d.loadConfigCredentials,
+		d.loadGroupedState,
 	} {
 		if err := load(state); err != nil {
 			return billing.Snapshot{}, err
@@ -79,9 +80,11 @@ func saveStateTables(tx *sql.Tx, state *billing.State, changes billing.Changes) 
 		}
 	}
 	if changes.ConfigCredentials {
-		return replaceConfigCredentials(tx, state)
+		if err := replaceConfigCredentials(tx, state); err != nil {
+			return err
+		}
 	}
-	return nil
+	return saveGroupedState(tx, state, changes)
 }
 
 var _ billing.Repository = (*DB)(nil)

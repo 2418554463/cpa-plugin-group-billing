@@ -11,3 +11,15 @@ node_modules/
 .agents
 .playwright/
 .playwright-cli/
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+billing-data/
+.cache/

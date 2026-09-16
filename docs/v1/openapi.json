@@ -1,0 +1,2283 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CPA 分组计费插件 V1 · 拟新增接口",
+    "version": "0.1.0-design",
+    "description": "设计契约，尚未实现。基于 cpa-key-billing v1.3.11，沿用 PluginID。所有路径为静态路径以匹配当前宿主注册方式。旧 /plans 等 API 维持原契约。本文件不包含旧 API 的完整定义。金额字符串最多9位小数，null 表示不限；日界线为 Asia/Shanghai 00:00。"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8317",
+      "description": "示例地址，替换为实际 CPA；远程部署使用 HTTPS"
+    }
+  ],
+  "security": [
+    {
+      "ManagementBearer": []
+    },
+    {
+      "ManagementKeyHeader": []
+    }
+  ],
+  "paths": {
+    "/v0/management/plugins/cpa-key-billing/v1/groups": {
+      "get": {
+        "operationId": "listGroups",
+        "summary": "列出资源组",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "draft",
+                "published",
+                "archived"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Group"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGroup",
+        "summary": "新建资源组草稿",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateGroup",
+        "summary": "修改资源组（发布后冻结模型成员）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/groups/publish": {
+      "post": {
+        "operationId": "publishGroup",
+        "summary": "校验并发布唯一模型归属",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "group_id": {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  "expected_revision": {
+                    "$ref": "#/components/schemas/Revision"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "group_id",
+                  "expected_revision",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/groups/archive": {
+      "post": {
+        "operationId": "archiveGroup",
+        "summary": "归档并停止新准入，保留归属和历史账本",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "group_id": {
+                    "$ref": "#/components/schemas/ID"
+                  },
+                  "expected_revision": {
+                    "$ref": "#/components/schemas/Revision"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "group_id",
+                  "expected_revision",
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/groups/preview": {
+      "post": {
+        "operationId": "previewGroup",
+        "summary": "静态预览冲突和路由权限交集",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/plans": {
+      "get": {
+        "operationId": "listGroupedPlans",
+        "summary": "列出分组计划（不是旧套餐 API）",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Plan"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGroupedPlan",
+        "summary": "新建分组计划",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceGroupedPlan",
+        "summary": "修订分组政策，保留已用与在途",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/key-plan-bindings": {
+      "get": {
+        "operationId": "getKeyPlanBinding",
+        "summary": "查看当前及待生效的 Key 模式/计划",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Binding"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "scheduleKeyPlanBinding",
+        "summary": "安排次日生效的 Key 模式/计划",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BindingWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Binding"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/key-plan-bindings/preview": {
+      "post": {
+        "operationId": "previewKeyPlanBinding",
+        "summary": "预览切换的旧约束替换和生效时间",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BindingWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "binding": {
+                      "$ref": "#/components/schemas/BindingItem"
+                    },
+                    "replaced_legacy_constraints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "retained_routes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "binding",
+                    "replaced_legacy_constraints",
+                    "retained_routes",
+                    "warnings"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/keys/group-usage": {
+      "get": {
+        "operationId": "getKeyGroupUsage",
+        "summary": "查询指定 Key 今日各组用量和实时并发",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/keys/group-reset": {
+      "post": {
+        "operationId": "resetKeyGroupQuota",
+        "summary": "仅重置指定 Key 指定组的当日有效金额，保留原始消费",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/shared-labels": {
+      "get": {
+        "operationId": "getSharedLabel",
+        "summary": "按精确身份读取 Keeper 共享备注",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "downstream_key",
+                "upstream_identity"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "下游为 scope；上游为 [auth_type,identity] 的规范化 JSON 字符串，不是邮箱或原始凭证",
+              "minLength": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "refresh",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Label"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "writeSharedLabel",
+        "summary": "修改 Keeper 原始 alias 并回读，非原子远端 CAS",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Label"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "写入前验证对象映射；读取的远端值与 expected_value 不同时返回409 label_conflict。远端超时用 keeper_write_outcome_unknown，不得假装写失败或成功。不得回退本地写。"
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/integrations/keeper/status": {
+      "get": {
+        "operationId": "getKeeperStatus",
+        "summary": "查看脱敏连接状态及映射统计",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeeperStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/integrations/keeper/refresh": {
+      "post": {
+        "operationId": "refreshKeeper",
+        "summary": "按需连接和刷新映射；不启动后台任务",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {},
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeeperStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/management/plugins/cpa-key-billing/v1/audit": {
+      "get": {
+        "operationId": "listGroupBillingAudit",
+        "summary": "游标查询脱敏修改记录",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "object_type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "object_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuditEntry"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v0/resource/plugins/cpa-key-billing/v1/subscription": {
+      "get": {
+        "operationId": "getMyGroupSubscription",
+        "summary": "普通 Key 查询自己的分组套餐和今日用量",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "CallerBearer": []
+          }
+        ],
+        "description": "仅由宿主认证上下文确定 scope；不得接受查询其他 scope，不返回 Keeper 内部身份备注或管理配置。"
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ManagementBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "CPA 管理密钥，由宿主验证，不是普通下游 Key"
+      },
+      "ManagementKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Management-Key",
+        "description": "CPA 管理密钥的宿主支持形式，以部署版本为准"
+      },
+      "CallerBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "下游 CPA API Key，仅允许自助 resource 接口"
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "结构化错误，不包含 Key、密码、Cookie 或上游原始认证信息",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ID": {
+        "type": "string",
+        "description": "服务端生成的稳定 ID",
+        "minLength": 1,
+        "maxLength": 80
+      },
+      "Scope": {
+        "type": "string",
+        "description": "保持原有 caller-scope v1 哈希算法，不是 API Key",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "Instant": {
+        "type": "string",
+        "description": "UTC RFC3339Nano",
+        "format": "date-time"
+      },
+      "Date": {
+        "type": "string",
+        "description": "Asia/Shanghai 自然日",
+        "format": "date"
+      },
+      "Revision": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "USD": {
+        "type": "string",
+        "description": "USD 十进制字符串；最多 9 位小数，转换和累加须检查 int64 溢出",
+        "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,9})?$",
+        "examples": [
+          "500",
+          "0.000000001"
+        ]
+      },
+      "DailyLimit": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/USD",
+            "description": "必须大于 0，且不超过 int64 nano-USD 范围"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "null 表示不限；服务端额外校验正值及上界，0 不是不限"
+      },
+      "Concurrency": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 1,
+        "maximum": 10000,
+        "description": "null 表示不限；仍统计在途请求"
+      },
+      "CredentialClass": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "enum": [
+              "auth-files",
+              "ai-providers"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "description": "采用宿主实际返回的 provider 标识，不使用展示名称",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source",
+          "provider"
+        ]
+      },
+      "CredentialRef": {
+        "type": "string",
+        "description": "现有 CredentialRef 指纹；不得包含原始凭证",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      },
+      "Pool": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "inherit",
+              "selected"
+            ],
+            "description": "inherit 不额外增加 allow；selected 必须至少有一项 allow"
+          },
+          "allow_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialRef"
+            },
+            "uniqueItems": true
+          },
+          "deny_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialRef"
+            },
+            "uniqueItems": true
+          },
+          "allow_classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialClass"
+            },
+            "uniqueItems": true
+          },
+          "deny_classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialClass"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "mode",
+          "allow_refs",
+          "deny_refs",
+          "allow_classes",
+          "deny_classes"
+        ],
+        "description": "allow refs 与 classes 在组内做并集；deny 优先；再与 Key 原有权限及 CPA 候选做交集。inherit 要求两个 allow 列表为空。"
+      },
+      "Group": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "精确逻辑模型 ID；正式发布后冻结",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Pool"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "status",
+          "enabled",
+          "models",
+          "pool",
+          "revision",
+          "published_at"
+        ]
+      },
+      "GroupCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "精确逻辑模型 ID；正式发布后冻结",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Pool"
+          }
+        },
+        "required": [
+          "name",
+          "models",
+          "pool"
+        ]
+      },
+      "GroupPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "group_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "精确逻辑模型 ID；正式发布后冻结",
+              "minLength": 1
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Pool"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "group_id",
+          "expected_revision",
+          "reason"
+        ],
+        "description": "模型只能在 draft 修改；至少提供一个实际修改字段，服务端校验。"
+      },
+      "GroupPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "group_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "daily_limit_usd": {
+            "$ref": "#/components/schemas/DailyLimit"
+          },
+          "concurrency_limit": {
+            "$ref": "#/components/schemas/Concurrency"
+          }
+        },
+        "required": [
+          "group_id",
+          "enabled",
+          "daily_limit_usd",
+          "concurrency_limit"
+        ]
+      },
+      "Plan": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupPolicy"
+            },
+            "minItems": 1
+          },
+          "bound_key_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "revision",
+          "policies",
+          "bound_key_count"
+        ]
+      },
+      "PlanCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupPolicy"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "name",
+          "policies"
+        ]
+      },
+      "PlanWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "plan_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "expected_revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupPolicy"
+            },
+            "minItems": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "plan_id",
+          "expected_revision",
+          "name",
+          "policies",
+          "reason"
+        ],
+        "description": "同一组不可重复；仅可引用 published 组。全量更新，省略的组停止准入但不删除历史账本。额度立即生效，保留已用和在途请求。"
+      },
+      "BindingItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "enum": [
+              "legacy",
+              "grouped"
+            ]
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_from": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "plan_id",
+          "effective_from",
+          "effective_to"
+        ]
+      },
+      "Binding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/Revision"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BindingItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BindingItem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "scope",
+          "revision",
+          "active",
+          "pending"
+        ]
+      },
+      "BindingWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "尚未创建本地分组 Key 状态时为 0"
+          },
+          "mode": {
+            "enum": [
+              "legacy",
+              "grouped"
+            ]
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective": {
+            "const": "next_day"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "scope",
+          "expected_revision",
+          "mode",
+          "plan_id",
+          "effective",
+          "reason"
+        ],
+        "description": "grouped 必须有 plan_id，legacy 必须为 null；次日上海零点切换，不叠加旧额度或旧 Key 并发。"
+      },
+      "GroupUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "group_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "group_name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "business_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "daily_limit_usd": {
+            "$ref": "#/components/schemas/DailyLimit"
+          },
+          "raw_cost_usd": {
+            "$ref": "#/components/schemas/USD"
+          },
+          "reset_credit_usd": {
+            "$ref": "#/components/schemas/USD"
+          },
+          "used_usd": {
+            "$ref": "#/components/schemas/USD"
+          },
+          "remaining_usd": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/USD"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overage_usd": {
+            "$ref": "#/components/schemas/USD"
+          },
+          "concurrency_limit": {
+            "$ref": "#/components/schemas/Concurrency"
+          },
+          "active_requests": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "requests": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "incomplete_records": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accounting_complete": {
+            "type": "boolean"
+          },
+          "next_reset_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "admission": {
+            "enum": [
+              "allowed",
+              "group_disabled",
+              "group_quota_exceeded",
+              "group_concurrency_exceeded",
+              "accounting_unavailable",
+              "model_mapping_unverified"
+            ]
+          },
+          "reset_cutoff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "group_id",
+          "group_name",
+          "enabled",
+          "business_date",
+          "daily_limit_usd",
+          "raw_cost_usd",
+          "reset_credit_usd",
+          "used_usd",
+          "remaining_usd",
+          "overage_usd",
+          "concurrency_limit",
+          "active_requests",
+          "requests",
+          "tokens",
+          "incomplete_records",
+          "accounting_complete",
+          "next_reset_at",
+          "admission",
+          "reset_cutoff"
+        ],
+        "description": "金额 used=raw-reset_credit；不限时 remaining=null；已超额时 remaining=0。admission 是当前状态快照，不保证下次请求一定获准。并发是实时值，不是日累计。"
+      },
+      "KeyUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "label": {
+            "type": "string"
+          },
+          "label_stale": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "const": "Asia/Shanghai"
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupUsage"
+            }
+          }
+        },
+        "required": [
+          "scope",
+          "label",
+          "label_stale",
+          "timezone",
+          "plan_id",
+          "groups"
+        ]
+      },
+      "ResetRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "group_id": {
+            "$ref": "#/components/schemas/ID"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "scope",
+          "group_id",
+          "reason"
+        ]
+      },
+      "LabelSubject": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "downstream_key",
+              "upstream_identity"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "下游为 scope；上游为 [auth_type,identity] 的规范化 JSON 字符串，不是邮箱或原始凭证",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ]
+      },
+      "Label": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/LabelSubject"
+          },
+          "value": {
+            "type": "string",
+            "description": "允许空字符串；下游最多128字符，上游最多50字符；禁止控制字符"
+          },
+          "source": {
+            "const": "keeper"
+          },
+          "source_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "上游 CPA 原始 note，只读；下游为 null"
+          },
+          "fetched_at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "sync_state": {
+            "enum": [
+              "confirmed",
+              "cached",
+              "write_confirmed_read_failed",
+              "outcome_unknown"
+            ]
+          },
+          "writable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "subject",
+          "value",
+          "source",
+          "source_note",
+          "fetched_at",
+          "stale",
+          "sync_state",
+          "writable"
+        ]
+      },
+      "LabelWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/LabelSubject"
+          },
+          "value": {
+            "type": "string"
+          },
+          "expected_value": {
+            "type": "string",
+            "description": "提交前重新读取对比，仅尽力检测冲突；Keeper 没有原子 CAS，不保证跨页面互斥"
+          }
+        },
+        "required": [
+          "subject",
+          "value",
+          "expected_value"
+        ]
+      },
+      "KeeperStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "不含认证信息的 URL"
+          },
+          "instance_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "enum": [
+              "not_configured",
+              "ready",
+              "unauthorized",
+              "unavailable",
+              "partial"
+            ]
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Instant"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "matched_downstream_keys": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "matched_upstream_identities": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unmatched_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "configured",
+          "base_url",
+          "instance_id",
+          "state",
+          "last_success_at",
+          "matched_downstream_keys",
+          "matched_upstream_identities",
+          "unmatched_count",
+          "error_code"
+        ]
+      },
+      "PreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/GroupCreate"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "required": [
+          "group"
+        ],
+        "description": "只读静态预览。scope 可选；缺少 scope 不声称已计算某个 Key 的有效权限。"
+      },
+      "Preview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "group_id": {
+                  "$ref": "#/components/schemas/ID"
+                }
+              },
+              "required": [
+                "model",
+                "group_id"
+              ]
+            }
+          },
+          "unknown_models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "missing_credentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CredentialRef"
+            }
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dynamic_pool": {
+            "type": "boolean"
+          },
+          "host_contract_verified": {
+            "const": false
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "valid",
+          "conflicts",
+          "unknown_models",
+          "missing_credentials",
+          "candidate_count",
+          "dynamic_pool",
+          "host_contract_verified",
+          "warnings"
+        ],
+        "description": "静态预览不能证明宿主 usage Alias 契约，联调验证必须单独完成。"
+      },
+      "AuditEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "整数 ID 的字符串"
+          },
+          "at": {
+            "$ref": "#/components/schemas/Instant"
+          },
+          "actor_kind": {
+            "enum": [
+              "management-key",
+              "trusted-host-identity",
+              "system"
+            ]
+          },
+          "actor_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "action": {
+            "type": "string"
+          },
+          "object_type": {
+            "type": "string"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "before": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "after": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "reason": {
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "success",
+              "failure",
+              "remote_outcome_unknown"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actor_kind",
+          "actor_id",
+          "action",
+          "object_type",
+          "object_id",
+          "before",
+          "after",
+          "reason",
+          "result"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "稳定机器码"
+              },
+              "message": {
+                "type": "string",
+                "description": "适合显示的脱敏消息"
+              },
+              "group_id": {
+                "$ref": "#/components/schemas/ID"
+              },
+              "retry_at": {
+                "$ref": "#/components/schemas/Instant"
+              },
+              "current_revision": {
+                "$ref": "#/components/schemas/Revision"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "EventExtension": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "group_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "classification": {
+            "enum": [
+              "grouped",
+              "legacy",
+              "unclassified"
+            ]
+          },
+          "pricing_status": {
+            "enum": [
+              "priced",
+              "unpriced"
+            ]
+          },
+          "business_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/USD"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "event_id",
+          "group_id",
+          "classification",
+          "pricing_status",
+          "business_date",
+          "cost_usd"
+        ]
+      }
+    }
+  },
+  "x-admission-errors": [
+    {
+      "status": 403,
+      "code": "model_not_grouped",
+      "meaning": "请求的逻辑模型没有唯一的已发布组"
+    },
+    {
+      "status": 403,
+      "code": "group_disabled",
+      "meaning": "组或本 Key 套餐政策不可用"
+    },
+    {
+      "status": 403,
+      "code": "model_not_allowed",
+      "meaning": "Key 原有路由权限拒绝"
+    },
+    {
+      "status": 429,
+      "code": "group_quota_exceeded",
+      "meaning": "本 Key 本组当日已用达到额度，retry_at 是次日零点"
+    },
+    {
+      "status": 429,
+      "code": "group_concurrency_exceeded",
+      "meaning": "本 Key 本组槽已满，不承诺固定秒数恢复"
+    },
+    {
+      "status": 503,
+      "code": "group_no_available_credentials",
+      "meaning": "交集没有可用凭证，不跨组自动回退"
+    },
+    {
+      "status": 503,
+      "code": "accounting_unavailable",
+      "meaning": "关键账本不可用，拒绝继续准入"
+    },
+    {
+      "status": 503,
+      "code": "model_mapping_unverified",
+      "meaning": "宿主模型映射契约未验证，不能保证正确归组"
+    }
+  ],
+  "x-management-error-codes": [
+    "revision_conflict",
+    "model_group_conflict",
+    "published_model_membership_immutable",
+    "invalid_policy",
+    "binding_conflict",
+    "keeper_unavailable",
+    "keeper_unauthorized",
+    "keeper_object_not_found",
+    "label_conflict",
+    "keeper_write_outcome_unknown",
+    "storage_unavailable"
+  ],
+  "x-existing-api-extensions": [
+    {
+      "paths": [
+        "/v0/management/plugins/cpa-key-billing/events",
+        "/v0/management/plugins/cpa-key-billing/errors",
+        "/v0/management/plugins/cpa-key-billing/analysis"
+      ],
+      "change": "追加可选 group_id 过滤；事件/分析追加归组信息。旧字段不改名、不删除，旧事件无映射时显示 legacy。响应扩展参照 EventExtension。"
+    },
+    {
+      "paths": [
+        "/v0/resource/plugins/cpa-key-billing/events",
+        "/v0/resource/plugins/cpa-key-billing/errors",
+        "/v0/resource/plugins/cpa-key-billing/analysis"
+      ],
+      "change": "同上，但永久限定当前认证 Key 的 scope，额外 scope 参数拒绝。"
+    }
+  ]
+}

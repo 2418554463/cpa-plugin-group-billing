@@ -6,6 +6,7 @@ import "time"
 // request path has to consult without touching disk. Request and error events
 // grow with traffic and are queried directly from the repository.
 type State struct {
+	Grouped GroupState
 	// Prices is keyed by NormalizeModelID; each value retains its stored spelling.
 	Prices            map[string]CustomPrice
 	Plans             []Plan
@@ -22,6 +23,7 @@ type ConfigCredential struct {
 
 func NewState() *State {
 	return &State{
+		Grouped:           NewGroupState(),
 		Prices:            make(map[string]CustomPrice),
 		Keys:              make(map[string]*KeyState),
 		ConfigCredentials: make(map[string]ConfigCredential),

@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-$repository = "haowang02/cpa-plugin-key-billing"
+$repository = "2418554463/cpa-plugin-group-billing"
 $pluginName = "cpa-key-billing"
 $pluginFile = "$pluginName.dll"
 $pluginDir = Join-Path (Get-Location).Path "plugins"

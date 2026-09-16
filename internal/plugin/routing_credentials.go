@@ -326,7 +326,22 @@ func (a *App) listCredentials(_ ManagementRequest) ManagementResponse {
 	if err := a.refreshCredentialInventory(); err != nil {
 		return JSONError(http.StatusBadGateway, "host_unavailable", err.Error())
 	}
-	return JSONResponse(http.StatusOK, map[string]any{"credentials": a.credentialInventory()})
+	inventory := a.credentialInventory()
+	a.keeperMu.Lock()
+	if a.keeper != nil {
+		for _, label := range a.store.CachedSharedLabels(a.keeper.Instance()) {
+			if label.Kind != "upstream_identity" || label.Value == "" {
+				continue
+			}
+			for i := range inventory {
+				if inventory[i].Ref == label.SubjectID {
+					inventory[i].DisplayName = label.Value
+				}
+			}
+		}
+	}
+	a.keeperMu.Unlock()
+	return JSONResponse(http.StatusOK, map[string]any{"credentials": inventory})
 }
 
 func (a *App) credentialByRawID(id string) (credentialView, bool) {

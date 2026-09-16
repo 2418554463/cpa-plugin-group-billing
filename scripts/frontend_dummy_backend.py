@@ -1371,7 +1371,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_html(body)
             return
         if parsed.path in ("/", "/ui"):
-            body = UI_PATH.read_text()
+            body = UI_PATH.read_text().replace("// GROUP_BILLING_UI", (UI_PATH.parent / "group_ui.js").read_text(), 1)
             if self.host_mode != "standalone":
                 body = body.replace(
                     "</head>",
